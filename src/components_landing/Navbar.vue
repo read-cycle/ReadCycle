@@ -1,149 +1,272 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import logo from '@/assets/icons/rc_logo.svg'
+
+const menuOpen = ref(false)
+
+function closeMenu() {
+  menuOpen.value = false
+}
+</script>
+
 <template>
-<div class="navbar">
-    <ul class="navbar-ul">
-        <li class="navbar-item header-item"><a href="" class="navbar-link"><div class="logo-icon"><img src="../assets/icons/rc_logo.svg" alt="Logo" /></div>ReadCycle</a></li>
-        <li class="navbar-item"><a href="#" class="navbar-link">Home</a></li>
-        <li class="navbar-item"><a href="#about-us" class="navbar-link">About Us</a></li>
-        <li class="navbar-item"><a href="#how-it-works" class="navbar-link">How it Works</a></li>
-        <li class="navbar-item"><a href="#contact-us" class="navbar-link">Contact Us</a></li>
-        <li class="navbar-item login-item"><a href="" class="navbar-link"></a>
-            <router-link to="/login" class="login-btn">Login</router-link>
-        </li>
-    </ul>
-</div>
+  <header class="landing-navbar">
+    <div class="navbar-inner">
+      <a href="#" class="brand" @click="closeMenu">
+        <span class="brand-mark">
+          <img :src="logo" alt="ReadCycle logo">
+        </span>
+        <span class="brand-copy">
+          <span class="brand-kicker">ReadCycle</span>
+          <span class="brand-subtitle">Student book exchange</span>
+        </span>
+      </a>
+
+      <nav class="desktop-nav" aria-label="Primary">
+        <a href="#" class="nav-link">Home</a>
+        <a href="#about-us" class="nav-link">About</a>
+        <a href="#how-it-works" class="nav-link">How It Works</a>
+        <a href="#contact-us" class="nav-link">Contact</a>
+      </nav>
+
+      <div class="desktop-actions">
+        <router-link to="/login" class="cta-link">Login</router-link>
+      </div>
+
+      <button
+        type="button"
+        class="menu-toggle"
+        :aria-expanded="menuOpen"
+        aria-label="Toggle navigation menu"
+        @click="menuOpen = !menuOpen"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+
+    <transition name="menu-fade">
+      <div v-if="menuOpen" class="mobile-panel">
+        <nav class="mobile-nav" aria-label="Mobile">
+          <a href="#" class="mobile-link" @click="closeMenu">Home</a>
+          <a href="#about-us" class="mobile-link" @click="closeMenu">About</a>
+          <a href="#how-it-works" class="mobile-link" @click="closeMenu">How It Works</a>
+          <a href="#contact-us" class="mobile-link" @click="closeMenu">Contact</a>
+          <router-link to="/login" class="mobile-cta" @click="closeMenu">Login</router-link>
+        </nav>
+      </div>
+    </transition>
+  </header>
 </template>
+
 <style lang="scss" scoped>
-.navbar {
-    background-color: $color-background;
-    position: fixed;
-    z-index: 10;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 10dvh;
-    .navbar-ul {
-        width: 100%;
-        height: 100%;
-        list-style-type: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        .header-item {
-            margin-right: auto;
-            font-family: 'Nunito';
-        }
-        .login-item {
-            margin-left: auto;
-            .login-btn {
-                padding: 0.75vw 2vw;
-                background-color: $color-primary;
-                border: 2px solid $color-background;
-                border-radius: 10px;
-                transition: box-shadow 0.4s ease;
-                text-decoration: none;
-                color: $color-text;
-                font-family: 'Nunito';
-                &:hover {
-                    box-shadow: 0 0 0 2px $color-primary;
-                }
-                cursor: pointer;
-            }
-        }
-        .navbar-item {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            .navbar-link {
-                text-decoration: none;
-                color: $color-text;
-                font-family: 'Nunito';
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                column-gap: 4px;
-                text-wrap: nowrap;
-                .logo-icon {
-                    aspect-ratio: 1/1;
-                    padding-top: 4.5px;
-                }
-            }
-        }
-    }
+.landing-navbar {
+  --max-width: 84rem;
+  --accent-color: #1c6758;
+  --muted-text: #5d7069;
+  --surface-color: rgba(255, 255, 255, 0.82);
+  --surface-border: rgba(28, 103, 88, 0.12);
+  --transition-speed: 220ms;
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 30;
+  width: 100%;
+  padding: 0.9rem 1rem;
 }
-@media screen and (min-width: 1200px) {
-    .navbar-link {
-        font-size: px-to-vw(25);
-    }
-    .login-btn {
-        font-size: px-to-vw(25);
-    }
-    .logo-icon {
-        img {
-            width: 2vw;
-        }
-    }
+
+.navbar-inner {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  border-radius: 1.5rem;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-color);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 38px rgba(28, 103, 88, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
-@media screen and (max-width: 1200px) {
-    .navbar-link {
-        font-size: px-to-vw(35);
-    }
-    .login-btn {
-        font-size: px-to-vw(35);
-    }
-    .logo-icon {
-        img {
-            width: 2vw;
-        }
-    }
-    .logo-icon {
-        img {
-            width: 3vw;
-        }
-    }
+
+.brand {
+  min-height: 44px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
 }
-@media screen and (max-width: 1025px) {
-    .navbar-link {
-        font-size: px-to-vw(45);
-    }
-    .login-btn {
-        font-size: px-to-vw(45);
-    }
-    .logo-icon {
-        img {
-            width: 2vw;
-        }
-    }
-    .logo-icon {
-        img {
-            width: 3vw;
-        }
-    }
+
+.brand-mark {
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(38, 229, 188, 0.18), rgba(129, 241, 217, 0.32));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+
+  img {
+    width: 2.2rem;
+    height: 2.2rem;
+    object-fit: contain;
+  }
 }
-@media screen and (max-width: 950px) {
-    .navbar-link {
-        font-size: px-to-vw(45);
-    }
-    .login-btn {
-        font-size: px-to-vw(45);
-    }
-    .logo-icon {
-        img {
-            width: 5vw;
-        }
-    }
+
+.brand-copy {
+  display: grid;
 }
-@media screen and (max-width: 550px) {
-    .navbar-link {
-        font-size: px-to-vw(40);
+
+.brand-kicker {
+  font-family: 'Manrope';
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--accent-color);
+}
+
+.brand-subtitle {
+  font-family: 'Nunito';
+  font-size: 0.88rem;
+  color: var(--muted-text);
+}
+
+.desktop-nav,
+.desktop-actions {
+  display: none;
+}
+
+.menu-toggle {
+  width: 2.9rem;
+  height: 2.9rem;
+  min-width: 44px;
+  min-height: 44px;
+  margin-left: auto;
+  border: 1px solid rgba(28, 103, 88, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.26rem;
+  cursor: pointer;
+
+  span {
+    width: 1rem;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--accent-color);
+  }
+}
+
+.mobile-panel {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0.75rem auto 0;
+  padding: 0 0.15rem;
+}
+
+.mobile-nav {
+  padding: 0.75rem;
+  border-radius: 1.5rem;
+  border: 1px solid var(--surface-border);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 38px rgba(28, 103, 88, 0.08);
+  display: grid;
+  gap: 0.5rem;
+}
+
+.mobile-link,
+.mobile-cta,
+.nav-link,
+.cta-link {
+  min-height: 44px;
+  text-decoration: none;
+  font-family: 'Nunito';
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.mobile-link {
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  color: var(--accent-color);
+
+  &:hover {
+    background: rgba(38, 229, 188, 0.08);
+  }
+}
+
+.mobile-cta,
+.cta-link {
+  padding: 0.9rem 1.25rem;
+  border-radius: 999px;
+  color: var(--accent-color);
+  background: linear-gradient(135deg, rgba(38, 229, 188, 0.9), rgba(129, 241, 217, 0.92));
+  box-shadow: 0 12px 26px rgba(28, 103, 88, 0.14);
+}
+
+.menu-fade-enter-active,
+.menu-fade-leave-active {
+  transition:
+    opacity var(--transition-speed) ease,
+    transform var(--transition-speed) ease;
+}
+
+.menu-fade-enter-from,
+.menu-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+@media (min-width: 900px) {
+  .desktop-nav,
+  .desktop-actions {
+    display: flex;
+  }
+
+  .desktop-nav {
+    margin-left: auto;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .desktop-actions {
+    align-items: center;
+  }
+
+  .nav-link {
+    padding: 0.75rem 1rem;
+    border-radius: 999px;
+    color: var(--muted-text);
+    transition:
+      background-color var(--transition-speed) ease,
+      color var(--transition-speed) ease;
+
+    &:hover {
+      color: var(--accent-color);
+      background: rgba(38, 229, 188, 0.08);
     }
-    .login-btn {
-        font-size: px-to-vw(40);
-    }
-    .logo-icon {
-        img {
-            width: 5vw;
-        }
-    }
+  }
+
+  .cta-link {
+    margin-left: 0.5rem;
+  }
+
+  .menu-toggle,
+  .mobile-panel {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .brand-subtitle {
+    display: none;
+  }
 }
 </style>

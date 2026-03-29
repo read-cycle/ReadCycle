@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mobile:check": "node scripts/mobile-compat-check.mjs"
   },
   "dependencies": {
     "@vueform/multiselect": "^2.6.11",

@@ -107,7 +107,7 @@ function onFileChange(event: Event) {
         .addFile {
             position: absolute;
             top: 0%;
-            left: 6%;
+            left: 3%;
             width: 35%;
             aspect-ratio: 1/1;
             background-image: url(../assets/images/addFiles.svg);
@@ -118,7 +118,7 @@ function onFileChange(event: Event) {
         .note {
             position: absolute;
             bottom: 11%;
-            right: 19%;
+            right: 14%;
             width: 20%;
             aspect-ratio: 1/1;
             background-image: url(../assets/images/File.svg);

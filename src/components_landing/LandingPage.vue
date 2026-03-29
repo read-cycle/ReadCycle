@@ -3,11 +3,15 @@ import Hero from './Hero.vue'
 import Navbar from './Navbar.vue';
 import Abt from './Abt.vue';
 import ContactUs from './ContactUs.vue';
+import BookCarousel from './BookCarousel.vue';
+import HowItWorks from './HowItWorks.vue';
 </script>
 <template>
     <Navbar></Navbar>
     <div class="page-container">
         <Hero></Hero>
+        <BookCarousel></BookCarousel>
+        <HowItWorks></HowItWorks>
         <Abt></Abt>
         <ContactUs></ContactUs>
     </div>
@@ -15,6 +19,6 @@ import ContactUs from './ContactUs.vue';
 <style lang="scss" scoped>
 .page-container {
     width: 100%;
-    height: 300%;
+    min-height: 100%;
 }
 </style>

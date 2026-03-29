@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, defineEmits } from 'vue';
-import { X, Eye, EyeClosed } from 'lucide-vue-next'
+import {X, Eye, EyeClosed, type LucideIcon} from 'lucide-vue-next'
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
@@ -10,7 +10,7 @@ const props = defineProps<{
   modelValue: string,
   fieldName: string,
   placeholder?: string,
-  fieldIcon?: string,
+  fieldIcon?: LucideIcon,
   fieldType?: 'text' | 'password' | 'email'
 }>()
 
@@ -44,7 +44,9 @@ const input_pwd = ref();
     <fieldset class="input-box-container">
       <legend>{{ fieldName }}</legend>
 
-      <div class="input-icon-container" v-html="fieldIcon" />
+      <div class="input-icon-container">
+        <component :is="fieldIcon" v-if="fieldIcon" />
+      </div>
 
       <input
         ref="inputRef"

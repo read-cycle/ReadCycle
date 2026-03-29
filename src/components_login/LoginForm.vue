@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import LoginInput from './LoginInput.vue';
-import emailIcon from '../assets/icons/email.svg?raw';
-import lockIcon from '../assets/icons/lock.svg?raw';
-import nameIcon from '../assets/icons/user.svg?raw';
-import confirmIcon from '../assets/icons/check-big.svg?raw';
+import { Mail } from "lucide-vue-next";
+import { Lock } from "lucide-vue-next";
+import { User2 } from "lucide-vue-next";
+import { CircleCheckBig } from "lucide-vue-next";
 import { useLoginPage } from '../composables/useLoginPage';
 
 const { email, password, name, confirmPassword, rememberMe, newUser, resetPassword } = useLoginPage();
@@ -18,7 +18,7 @@ const { email, password, name, confirmPassword, rememberMe, newUser, resetPasswo
       <LoginInput
         v-model="name"
         field-name="Name"
-        :field-icon="nameIcon"
+        :field-icon="User2"
         placeholder="John Doe"
         field-type="text"
       />
@@ -28,7 +28,7 @@ const { email, password, name, confirmPassword, rememberMe, newUser, resetPasswo
       <LoginInput
         v-model="email"
         field-name="Email"
-        :field-icon="emailIcon"
+        :field-icon="Mail"
         placeholder="example@abc.com"
         field-type="email"
       />
@@ -38,7 +38,7 @@ const { email, password, name, confirmPassword, rememberMe, newUser, resetPasswo
       <LoginInput
         v-model="password"
         field-name="Password"
-        :field-icon="lockIcon"
+        :field-icon="Lock"
         placeholder="••••••••"
         field-type="password"
       />
@@ -48,7 +48,7 @@ const { email, password, name, confirmPassword, rememberMe, newUser, resetPasswo
       <LoginInput
         v-model="confirmPassword"
         field-name="Verify Password"
-        :field-icon="confirmIcon"
+        :field-icon="CircleCheckBig"
         placeholder="••••••••"
         field-type="password"
       />

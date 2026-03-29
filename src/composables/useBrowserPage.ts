@@ -1,14 +1,14 @@
-import { addDoc, collection, getDoc, getDocs, orderBy, query } from 'firebase/firestore';
+import { addDoc, collection, getDoc } from 'firebase/firestore';
 import { computed, ref, watch } from 'vue';
 import { useToast } from 'vue-toastification';
 import { db } from '../firebase-init';
 import { createBookRequestEmail } from '../emailTemplates';
 import type { BuyerRequestedDoc, UploadDoc } from '../interfaces';
-import { normalizeMetadataValue } from '../interfaces';
 import { sendEmail } from '../sendEmail';
 import { useForm } from './useForm';
-import { mapQuerySnapshot, type FirestoreRecord } from './firestore';
+import type { FirestoreRecord } from './firestore';
 import { useAuthGuard } from './useAuthGuard';
+import { fetchUploadPoolDocs } from './useUploadPool';
 import { useRequestNotifications } from './useRequestNotifications';
 
 export function useBrowserPage() {
@@ -22,24 +22,6 @@ export function useBrowserPage() {
   const requestForm = useForm();
 
   const notifications = useRequestNotifications();
-
-  function normalizeUploadDoc(data: Record<string, unknown> & { id: string }): UploadDoc {
-    return {
-      id: data.id,
-      isbn: normalizeMetadataValue(data.isbn),
-      title: normalizeMetadataValue(data.title),
-      grade: normalizeMetadataValue(data.grade),
-      subject: normalizeMetadataValue(data.subject),
-      price: typeof data.price === 'number' ? data.price : 0,
-      quantity: typeof data.quantity === 'number' ? data.quantity : 0,
-      uploaderName: typeof data.uploaderName === 'string' ? data.uploaderName : '',
-      listingImage: typeof data.listingImage === 'string' ? data.listingImage : '',
-      extraImages: Array.isArray(data.extraImages) ? data.extraImages.filter((entry): entry is string => typeof entry === 'string') : [],
-      timestamp: data.timestamp as UploadDoc['timestamp'],
-      uploaderEmail: typeof data.uploaderEmail === 'string' ? data.uploaderEmail : '',
-      uploaderID: typeof data.uploaderID === 'string' ? data.uploaderID : ''
-    };
-  }
 
   const filteredDocs = computed(() => {
     const queryValue = searchQuery.value.trim().toLowerCase();
@@ -59,8 +41,7 @@ export function useBrowserPage() {
     loading.value = true;
     requestForm.setField('name', user.value.displayName || '');
 
-    const result = await getDocs(query(collection(db, 'uploadPool'), orderBy('timestamp', 'desc')));
-    docsData.value = mapQuerySnapshot<UploadDoc>(result, normalizeUploadDoc);
+    docsData.value = await fetchUploadPoolDocs();
     loading.value = false;
   }
 

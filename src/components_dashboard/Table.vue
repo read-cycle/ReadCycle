@@ -22,8 +22,8 @@ const emit = defineEmits<{
 
 const emptyMessage = computed(() =>
   props.tableType === 'listings'
-    ? "You haven't uploaded any books yet. 📚"
-    : 'Your watchlist is empty. 👀'
+    ? "You haven't uploaded any books yet."
+    : 'Your watchlist is empty.'
 );
 const SKELETON_ROWS = 3;
 </script>

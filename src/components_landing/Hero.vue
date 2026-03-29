@@ -150,12 +150,16 @@ onMounted(async () => {
 <template>
     <div class="hero-container">
         <h1 class="hero-header">
-          <span class="lead-in">Second Chapters Start Here</span><br>
+          <span class="lead-in">Pass Books Forward</span><br>
           <span class="hero-highlighted">Read<br class="mobile-break"> Cycle</span>
         </h1>
         <div class="cta-btn-container">
             <router-link to="/login" class="login-btn"><button class="cta-btn">Start Sharing</button></router-link>
+            <a href="#how-it-works" class="cta-btn secondary">See How It Works</a>
         </div>
+        <p class="hero-purpose">
+            ReadCycle helps students list the books they’re done with and connect with peers who need them.
+        </p>
         <div class="subtext-container">
             <h3 class="hero-subtext">for <span class="subtext-highlighted">students</span>. by <span class="subtext-highlighted">students</span>.</h3>
         </div>
@@ -169,8 +173,11 @@ onMounted(async () => {
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: repeat(20, 1fr);
-    text-align: center;    
-    background-color: $color-background;
+    text-align: center;
+    background:
+      radial-gradient(circle at 15% 18%, rgba(38, 229, 188, 0.25), transparent 30%),
+      radial-gradient(circle at 80% 25%, rgba(23, 130, 109, 0.16), transparent 30%),
+      linear-gradient(180deg, rgba(129, 241, 217, 0.08), rgba(255, 255, 255, 0));
 
     .hero-header {
         grid-row: 5 / 15;
@@ -198,12 +205,12 @@ onMounted(async () => {
             -webkit-text-fill-color: transparent;
         }
     }
-    .cta-btn-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        grid-row: 15/16;
-        .cta-btn {
+        .cta-btn-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            grid-row: 15/16;
+            .cta-btn {
             font-family: 'Nunito';
             text-decoration: none;
             svg {
@@ -226,9 +233,26 @@ onMounted(async () => {
             position: relative;
             z-index: 4;
         }
-    }
+            .secondary {
+                margin-left: 1rem;
+                border: 4px solid rgba(28, 103, 88, 0.35);
+                background: rgba(255, 255, 255, 0.92);
+                color: $color-accent;
+            }
+        }
+        .login-btn {
+            text-decoration: none;
+        }
+        .hero-purpose {
+            margin: 0.75rem 1.6rem 0;
+            font-family: 'Nunito';
+            font-size: 1rem;
+            color: $color-text;
+            max-width: 54rem;
+            justify-self: center;
+        }
 
-    .subtext-container {
+        .subtext-container {
         grid-row: 18/19;
         display: flex;
         align-items: center;
@@ -277,9 +301,6 @@ onMounted(async () => {
         font-size: px-to-vw(50);
     }
 }
-
-
-
 @media screen and (min-width: 750px) {
     .hero-highlighted {
         word-spacing: 50px;

@@ -45,15 +45,13 @@ export function useUploadPage() {
     { immediate: true }
   );
 
-  function handleListingImage(event: Event) {
-    const target = event.target as HTMLInputElement;
-    listingImage.value = target.files?.[0] || null;
+  function handleListingImage(file: File | null) {
+    listingImage.value = file;
     delete form.errors.value.listingImage;
   }
 
-  function handleExtraImages(event: Event) {
-    const target = event.target as HTMLInputElement;
-    extraImages.value = Array.from(target.files || []);
+  function handleExtraImages(files: File[]) {
+    extraImages.value = files;
   }
 
   async function notifyWatchlistMatches() {

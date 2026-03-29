@@ -3,13 +3,12 @@ import { computed, ref } from 'vue';
 import { useToast } from 'vue-toastification';
 import { query, collection, orderBy, getDocs, where } from 'firebase/firestore';
 import { auth, db } from '../firebase-init';
-import bell from '../assets/icons/bell.svg?raw'
-import bellDot from '../assets/icons/bell-dot.svg?raw'
 import type { BuyerRequestedDoc } from '../interfaces';
 import { normalizeMetadataValue } from '../interfaces';
 import { updateProfile, onAuthStateChanged, updatePassword, linkWithPopup, GoogleAuthProvider, FacebookAuthProvider, TwitterAuthProvider, OAuthProvider, deleteUser } from 'firebase/auth';
 import router from '../router';
 import type { FirestoreRecord } from '../composables/firestore';
+import {Bell, BellDot, type LucideIcon} from 'lucide-vue-next';
 
 let userID: string | null = null;
 let userName: string | null = null;
@@ -88,7 +87,7 @@ const microsoftLinkedEmail = ref<string | null>();
 
 const showNotifs = ref(false);
 
-const iconHtml = computed(() => docsData.value.length >= 1 ? bellDot : bell)
+const iconHtml: LucideIcon = computed(() => docsData.value.length >= 1 ? BellDot : Bell)
 
 const toggleSettingsModal = ref(false);
 
@@ -242,8 +241,8 @@ function closeSettingsModal() {
     <div class="meta-container">
         <h1 class="page-header">{{ title }}</h1>
         <button class="meta-button" @click="showNotifs = !showNotifs">
-        <div class="icon-container" v-html="iconHtml">
-            
+        <div class="icon-container">
+            <component :is="iconHtml"></component>
         </div>
         <div v-if="showNotifs" class="notifications-dropdown">
           <div class="notif-block title-block">

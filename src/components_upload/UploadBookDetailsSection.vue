@@ -42,11 +42,6 @@ defineProps<{
         <option v-for="option in form.gradeOptions" :key="option" :value="option" />
       </datalist>
 
-      <div v-if="form.autoFilled.value.grade" class="autofill-badge">
-        Autofilled
-        <button type="button" @click="form.dismissAutofill('grade')">Dismiss</button>
-      </div>
-
       <label>
         Subject
         <input v-model="form.subject.value" list="upload-subject-options" @input="form.dismissAutofill('subject')" />
@@ -54,11 +49,6 @@ defineProps<{
       <datalist id="upload-subject-options">
         <option v-for="option in form.subjectOptions" :key="option" :value="option" />
       </datalist>
-
-      <div v-if="form.autoFilled.value.subject" class="autofill-badge">
-        Autofilled
-        <button type="button" @click="form.dismissAutofill('subject')">Dismiss</button>
-      </div>
     </div>
   </section>
 </template>
@@ -69,9 +59,11 @@ defineProps<{
   padding: 1rem;
   background: $color-background-secondary;
   border: 1px solid rgba(15, 23, 42, 0.08);
+  overflow: hidden;
 }
 
 .upload-form__fields {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
@@ -99,8 +91,13 @@ defineProps<{
   padding: 0.75rem;
 }
 
-.upload-form__lookup,
-.autofill-badge {
+.upload-form__lookup {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: $color-background-secondary;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
