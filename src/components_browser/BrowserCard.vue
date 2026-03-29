@@ -25,8 +25,11 @@ function formatTimestampToDDMMYY(ts: Timestamp) {
         <div class="main-text-container">
             <h1 class="text-container-header">{{ props.data.title }}</h1>
             <p class="text-container-para">{{ props.data.grade }}</p>
+            <p class="text-container-meta">{{ props.data.subject || 'General' }}</p>
         </div>
         <div class="metadata-container">
+            <p class="metadata-pill">Qty {{ props.data.quantity ?? 0 }}</p>
+            <p class="metadata-pill">₹{{ props.data.price ?? 0 }}</p>
             <p>{{ formatTimestampToDDMMYY(props.data.timestamp) }}</p>
         </div>
     </div>
@@ -53,7 +56,7 @@ function formatTimestampToDDMMYY(ts: Timestamp) {
         background-repeat: no-repeat;
     }
     .text-container {
-        height: 30%;
+        height: 40%;
         width: 100%;
         padding: 0 1rem;
         display: flex;
@@ -68,6 +71,15 @@ function formatTimestampToDDMMYY(ts: Timestamp) {
             flex-direction: column;
             align-items: flex-end;
             justify-content: center;
+            gap: 0.25rem;
+            p {
+              margin: 0;
+            }
+            .metadata-pill {
+              padding: 0.2rem 0.5rem;
+              border-radius: 999px;
+              background: rgba(58, 122, 254, 0.1);
+            }
         }
         .main-text-container {
             flex: 1 1 auto;
@@ -93,6 +105,16 @@ function formatTimestampToDDMMYY(ts: Timestamp) {
                 text-overflow: ellipsis;
                 white-space: nowrap;
                 overflow: hidden;        
+            }
+            .text-container-meta {
+                font-size: 13px;
+                font-family: 'Nunito';
+                color: rgba(15, 23, 42, 0.65);
+                max-width: 100%;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                overflow: hidden;
+                margin: 0;
             }
         }
     }

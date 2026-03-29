@@ -186,6 +186,27 @@ export function useForm() {
     return Object.keys(nextErrors).length === 0;
   }
 
+  function reset(defaults?: Partial<{
+    isbn: string;
+    title: string;
+    grade: string;
+    subject: string;
+    price: number | null;
+    quantity: number;
+    name: string;
+  }>) {
+    isbn.value = defaults?.isbn ?? '';
+    title.value = defaults?.title ?? '';
+    grade.value = defaults?.grade ?? '';
+    subject.value = defaults?.subject ?? '';
+    price.value = defaults?.price ?? 0;
+    quantity.value = defaults?.quantity ?? 1;
+    name.value = defaults?.name ?? '';
+    errors.value = {};
+    status.value = 'idle';
+    autoFilled.value = { grade: false, subject: false };
+  }
+
   const payload = computed(() => ({
     isbn: getPayloadValue(isbn.value),
     title: getPayloadValue(title.value),
@@ -217,6 +238,7 @@ export function useForm() {
     runIsbnLookup,
     inferFromTitle,
     validate,
-    payload
+    payload,
+    reset
   };
 }

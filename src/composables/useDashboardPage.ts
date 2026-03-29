@@ -1,6 +1,8 @@
 import { addDoc, collection, deleteDoc, getDocs, orderBy, query, serverTimestamp, where } from 'firebase/firestore';
 import { computed, ref, watch } from 'vue';
+import { useToast } from 'vue-toastification';
 import { db } from '../firebase-init';
+import { createRequestAcceptedEmail } from '../emailTemplates';
 import type { BuyerRequestedDoc, UploadDoc, WatchlistDoc } from '../interfaces';
 import { normalizeMetadataValue } from '../interfaces';
 import { sendEmail } from '../sendEmail';
@@ -12,6 +14,7 @@ import { moveRequestToMatched, useRequestNotifications } from './useRequestNotif
 
 export function useDashboardPage() {
   const { user, authReady } = useAuthGuard();
+  const toast = useToast();
   const pendingData = ref<FirestoreRecord<BuyerRequestedDoc>[]>([]);
   const watchData = ref<FirestoreRecord<WatchlistDoc>[]>([]);
   const uploadData = ref<FirestoreRecord<UploadDoc>[]>([]);
@@ -125,7 +128,17 @@ export function useDashboardPage() {
       timestamp: serverTimestamp()
     });
 
-    sendEmail(data.buyerEmail, 'Your request was accepted on ReadCycle', `<p>Your request for <b>${data.title ?? 'a book'}</b> was accepted.</p>`);
+    sendEmail(
+      data.buyerEmail,
+      'Your request was accepted on ReadCycle',
+      createRequestAcceptedEmail({
+        title: data.title ?? 'A book',
+        buyerQuantity: data.buyerQuantity,
+        uploaderName: data.uploaderName,
+        grade: data.grade,
+        subject: data.subject
+      })
+    );
   }
 
   notifications.acceptRequest = async () => {
@@ -163,10 +176,16 @@ export function useDashboardPage() {
       } satisfies Omit<WatchlistDoc, 'id' | 'timestamp'> & { timestamp: ReturnType<typeof serverTimestamp> });
       watchlistForm.status.value = 'success';
       watchlistModalOpen.value = false;
+      watchlistForm.reset({
+        name: user.value.displayName || '',
+        quantity: 1
+      });
       await loadDashboardData();
+      toast.success('Saved to watchlist.');
     } catch (error) {
       console.error('Failed to add watchlist item:', error);
       watchlistForm.status.value = 'error';
+      toast.error('Failed to save watchlist item.');
     } finally {
       watchlistLoading.value = false;
     }
@@ -175,11 +194,13 @@ export function useDashboardPage() {
   async function removeUpload(docRef: FirestoreRecord<UploadDoc>[0]) {
     await deleteDoc(docRef);
     uploadData.value = uploadData.value.filter(([entryRef]) => entryRef.id !== docRef.id);
+    toast.info('Upload removed.');
   }
 
   async function removeWatchlistItem(docRef: FirestoreRecord<WatchlistDoc>[0]) {
     await deleteDoc(docRef);
     watchData.value = watchData.value.filter(([entryRef]) => entryRef.id !== docRef.id);
+    toast.info('Watchlist item removed.');
   }
 
   const emptyState = computed(() => !uploadData.value.length && !watchData.value.length && !pendingData.value.length && !dashboardLoading.value);

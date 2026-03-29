@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useToast } from 'vue-toastification';
 import { query, collection, orderBy, getDocs, where } from 'firebase/firestore';
 import { auth, db } from '../firebase-init';
 import bell from '../assets/icons/bell.svg?raw'
@@ -13,6 +14,7 @@ import type { FirestoreRecord } from '../composables/firestore';
 let userID: string | null = null;
 let userName: string | null = null;
 let userEmail: string | null = null;
+const toast = useToast();
 
 const docsData = ref<FirestoreRecord<BuyerRequestedDoc>[]>([]);
 
@@ -103,16 +105,16 @@ async function deleteAccount() {
 
   try {
     await deleteUser(auth.currentUser);
-    alert("Your account has been deleted.");
+    toast.success('Your account has been deleted.');
     router.push('/login');
   } catch (error: unknown) {
     const firebaseError = getErrorDetails(error);
     if (firebaseError.code === "auth/requires-recent-login") {
-      alert("Please re-authenticate before deleting your account.");
+      toast.error('Please re-authenticate before deleting your account.');
       router.push('/login');
     } else {
       console.error(error);
-      alert(`Error deleting account: ${firebaseError.message ?? 'Unknown error'}`);
+      toast.error(`Error deleting account: ${firebaseError.message ?? 'Unknown error'}`);
     }
   }
 }
@@ -124,16 +126,16 @@ async function resetPassword() {
     }
     if(auth.currentUser) {
       await updatePassword(auth.currentUser, newPassword.value);
-      alert('Password changed!');
+      toast.success('Password changed.');
     }
   } catch (error: unknown) {
     const firebaseError = getErrorDetails(error);
     if (firebaseError.code === "auth/requires-recent-login") {
-      alert("Please re-authenticate before changing your password.");
+      toast.error('Please re-authenticate before changing your password.');
       router.push('/login');
     } else {
       console.error(error);
-      alert(`Error deleting account: ${firebaseError.message ?? 'Unknown error'}`);
+      toast.error(`Error changing password: ${firebaseError.message ?? 'Unknown error'}`);
     }
   }
 }
@@ -147,9 +149,10 @@ async function linkGoogleAccount() {
   } catch (error: unknown) {
     const firebaseError = getErrorDetails(error);
     if (firebaseError.code === "auth/credential-already-in-use") {
-      alert("That Google account is already linked with another user.");
+      toast.error('That Google account is already linked with another user.');
     } else {
       console.error(error);
+      toast.error('Failed to link Google account.');
     }
   }
 }
@@ -163,9 +166,10 @@ async function linkMetaAccount() {
   } catch (error: unknown) {
     const firebaseError = getErrorDetails(error);
     if (firebaseError.code === "auth/credential-already-in-use") {
-      alert("That Meta account is already linked with another user.");
+      toast.error('That Meta account is already linked with another user.');
     } else {
       console.error(error);
+      toast.error('Failed to link Meta account.');
     }
   }
 }
@@ -179,9 +183,10 @@ async function linkTwitterAccount() {
   } catch (error: unknown) {
     const firebaseError = getErrorDetails(error);
     if (firebaseError.code === "auth/credential-already-in-use") {
-      alert("That Twitter/X account is already linked with another user.");
+      toast.error('That Twitter/X account is already linked with another user.');
     } else {
       console.error(error);
+      toast.error('Failed to link Twitter/X account.');
     }
   }
 }
@@ -195,9 +200,10 @@ async function linkMicrosoftAccount() {
   } catch (error: unknown) {
     const firebaseError = getErrorDetails(error);
     if (firebaseError.code === "auth/credential-already-in-use") {
-      alert("That Microsoft account is already linked with another user.");
+      toast.error('That Microsoft account is already linked with another user.');
     } else {
       console.error(error);
+      toast.error('Failed to link Microsoft account.');
     }
   }
 }
@@ -209,12 +215,12 @@ async function changeDisplayName() {
 
   try {
     await updateProfile(auth.currentUser, { displayName: newDisplayName.value });
-    alert("Display name updated!");
+    toast.success('Display name updated.');
     console.log("New name:", auth.currentUser.displayName);
   } catch (error: unknown) {
     const firebaseError = getErrorDetails(error);
     console.error("Error updating display name:", error);
-    alert(`Error: ${firebaseError.message ?? 'Unknown error'}`);
+    toast.error(`Error: ${firebaseError.message ?? 'Unknown error'}`);
   }
 }
 

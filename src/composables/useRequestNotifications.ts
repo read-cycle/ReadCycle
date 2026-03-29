@@ -1,5 +1,6 @@
-import { deleteDoc, doc, runTransaction } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { ref } from 'vue';
+import { useToast } from 'vue-toastification';
 import { db } from '../firebase-init';
 import type { BuyerRequestedDoc, UploadDoc } from '../interfaces';
 import { useNotificationsStore } from '../stores/notifications';
@@ -15,34 +16,36 @@ interface RequestNotificationsOptions {
 }
 
 export async function moveRequestToMatched([docRef, data]: RequestNotificationItem) {
-  await runTransaction(db, async (transaction) => {
-    const listingSnapshot = await transaction.get(data.listingDoc);
+  const listingRef = doc(db, data.listingDoc.path);
+  const listingSnapshot = await getDoc(listingRef);
 
-    if (!listingSnapshot.exists()) {
-      throw new Error('Listing no longer exists.');
-    }
+  if (!listingSnapshot.exists()) {
+    throw new Error('Listing no longer exists.');
+  }
 
-    const listingData = listingSnapshot.data() as Partial<UploadDoc>;
-    const currentQuantity = typeof listingData.quantity === 'number' ? listingData.quantity : 0;
-    const requestedQuantity = typeof data.buyerQuantity === 'number' ? data.buyerQuantity : 0;
-    const remainingQuantity = currentQuantity - requestedQuantity;
+  const listingData = listingSnapshot.data() as Partial<UploadDoc>;
+  const currentQuantity = typeof listingData.quantity === 'number' ? listingData.quantity : 0;
+  const requestedQuantity = typeof data.buyerQuantity === 'number' ? data.buyerQuantity : 0;
+  const remainingQuantity = currentQuantity - requestedQuantity;
 
-    if (remainingQuantity < 0) {
-      throw new Error('Requested quantity exceeds the remaining listing quantity.');
-    }
+  if (remainingQuantity < 0) {
+    throw new Error('Requested quantity exceeds the remaining listing quantity.');
+  }
 
-    transaction.set(doc(db, 'matched', docRef.id), data);
-
-    if (remainingQuantity === 0) {
-      transaction.delete(data.listingDoc);
-    } else {
-      transaction.update(data.listingDoc, {
-        quantity: remainingQuantity
-      });
-    }
-
-    transaction.delete(docRef);
+  await setDoc(doc(db, 'matched', docRef.id), {
+    ...data,
+    listingDoc: listingRef
   });
+
+  if (remainingQuantity === 0) {
+    await deleteDoc(listingRef);
+  } else {
+    await updateDoc(listingRef, {
+      quantity: remainingQuantity
+    });
+  }
+
+  await deleteDoc(docRef);
 }
 
 async function deleteRequest([docRef]: RequestNotificationItem) {
@@ -50,6 +53,7 @@ async function deleteRequest([docRef]: RequestNotificationItem) {
 }
 
 export function useRequestNotifications(options: RequestNotificationsOptions = {}) {
+  const toast = useToast();
   const notificationLoading = ref(false);
   const { activeNotification, notificationsOpen, openNotification, closeNotification } = useNotificationsStore();
 
@@ -62,6 +66,10 @@ export function useRequestNotifications(options: RequestNotificationsOptions = {
       await (options.acceptRequest?.(item) ?? await moveRequestToMatched(item));
       closeNotification();
       await options.onAccepted?.(item);
+      toast.success('Request accepted.');
+    } catch (error) {
+      console.error('Failed to accept request:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to accept request.');
     } finally {
       notificationLoading.value = false;
     }
@@ -76,6 +84,10 @@ export function useRequestNotifications(options: RequestNotificationsOptions = {
       await (options.denyRequest?.(item) ?? await deleteRequest(item));
       closeNotification();
       await options.onDenied?.(item);
+      toast.info('Request denied.');
+    } catch (error) {
+      console.error('Failed to deny request:', error);
+      toast.error('Failed to deny request.');
     } finally {
       notificationLoading.value = false;
     }

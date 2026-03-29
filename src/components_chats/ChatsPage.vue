@@ -31,7 +31,7 @@ const { uploaderDocsData, buyerDocsData, currentDoc, displayItems, inputData, se
         <ChatListPanel header="Uploaded by others" :docs="buyerDocsData" :uploader="false" @select="selectChat" />
       </aside>
 
-      <ChatConversation :current-doc="currentDoc" :display-items="displayItems" :current-user-id="userId" :input-value="inputData" :sending="sending" @update:input-value="inputData = $event" @submit="sendMessage" @files-selected="files = $event" />
+      <ChatConversation :current-doc="currentDoc" :display-items="displayItems" :current-user-id="userId" :input-value="inputData" :selected-files="files" :sending="sending" @update:input-value="inputData = $event" @submit="sendMessage" @files-selected="files = $event" />
     </section>
   </main>
 

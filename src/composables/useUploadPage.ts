@@ -1,7 +1,9 @@
 import { addDoc, collection, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import { ref, watch } from 'vue';
+import { useToast } from 'vue-toastification';
 import { db, storage } from '../firebase-init';
+import { createWatchlistMatchEmail } from '../emailTemplates';
 import type { WatchlistDoc } from '../interfaces';
 import { normalizeMetadataValue } from '../interfaces';
 import { sendEmail } from '../sendEmail';
@@ -12,6 +14,7 @@ import { useRequestNotifications } from './useRequestNotifications';
 
 export function useUploadPage() {
   const { user } = useAuthGuard();
+  const toast = useToast();
   const form = useForm();
   const listingImage = ref<File | null>(null);
   const extraImages = ref<File[]>([]);
@@ -64,7 +67,13 @@ export function useUploadPage() {
       sendEmail(
         item.buyerEmail,
         'A book on your ReadCycle watchlist is now available',
-        `<p><b>${form.payload.value.title ?? 'A matching title'}</b> has just been uploaded.</p>`
+        createWatchlistMatchEmail({
+          title: form.payload.value.title ?? 'A matching title',
+          grade: form.payload.value.grade,
+          subject: form.payload.value.subject,
+          quantity: form.payload.value.quantity,
+          price: form.payload.value.price
+        })
       );
     });
   }
@@ -120,10 +129,19 @@ export function useUploadPage() {
       });
 
       await notifyWatchlistMatches();
+      form.reset({
+        name: user.value.displayName || '',
+        price: 0,
+        quantity: 1
+      });
+      listingImage.value = null;
+      extraImages.value = [];
       form.status.value = 'success';
+      toast.success('Upload complete.');
     } catch (error) {
       console.error('Upload failed:', error);
       form.status.value = 'error';
+      toast.error('Upload failed. Try again.');
     }
   }
 

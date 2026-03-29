@@ -1,4 +1,5 @@
 import { computed, inject, onBeforeUnmount, provide, reactive, ref, type InjectionKey } from 'vue';
+import { useToast } from 'vue-toastification';
 import {
   GoogleAuthProvider,
   OAuthProvider,
@@ -63,6 +64,7 @@ function humanizeFirebaseError(error: unknown, context: 'login' | 'signup' | 're
 }
 
 function createLoginPageStore() {
+  const toast = useToast();
   const authLoading = ref(false);
   const email = ref('');
   const password = ref('');
@@ -104,9 +106,9 @@ function createLoginPageStore() {
     const emailValue = email.value.trim();
     const passwordValue = password.value;
 
-    if (!emailValue) return window.alert('Email cannot be blank.');
-    if (!validateEmail(emailValue)) return window.alert('Please enter a valid email address.');
-    if (!passwordValue) return window.alert('Password cannot be blank.');
+    if (!emailValue) return void toast.error('Email cannot be blank.');
+    if (!validateEmail(emailValue)) return void toast.error('Please enter a valid email address.');
+    if (!passwordValue) return void toast.error('Password cannot be blank.');
 
     authLoading.value = true;
 
@@ -114,15 +116,16 @@ function createLoginPageStore() {
       .then(() => signInWithEmailAndPassword(auth, emailValue, passwordValue))
       .then((userCredential) => {
         if (!userCredential.user.emailVerified) {
-          window.alert('Please verify your email before logging in.');
+          toast.info('Please verify your email before logging in.');
           return;
         }
 
+        toast.success('Logged in successfully.');
         router.push('/dashboard');
       })
       .catch(async (error) => {
         console.error('Login error:', error);
-        window.alert(humanizeFirebaseError(error, 'login'));
+        toast.error(humanizeFirebaseError(error, 'login'));
       })
       .finally(() => {
         authLoading.value = false;
@@ -135,12 +138,12 @@ function createLoginPageStore() {
     const passwordValue = password.value;
     const passwordVerifyValue = confirmPassword.value;
 
-    if (!nameValue) return window.alert('Name cannot be blank.');
-    if (!emailValue) return window.alert('Email cannot be blank.');
-    if (!validateEmail(emailValue)) return window.alert('Please enter a valid email address.');
-    if (!passwordValue) return window.alert('Password cannot be blank.');
-    if (passwordValue.length < 6) return window.alert('Password must be at least 6 characters long.');
-    if (passwordValue !== passwordVerifyValue) return window.alert('Passwords do not match.');
+    if (!nameValue) return void toast.error('Name cannot be blank.');
+    if (!emailValue) return void toast.error('Email cannot be blank.');
+    if (!validateEmail(emailValue)) return void toast.error('Please enter a valid email address.');
+    if (!passwordValue) return void toast.error('Password cannot be blank.');
+    if (passwordValue.length < 6) return void toast.error('Password must be at least 6 characters long.');
+    if (passwordValue !== passwordVerifyValue) return void toast.error('Passwords do not match.');
 
     authLoading.value = true;
     setPersistence(auth, getPersistenceType())
@@ -148,11 +151,11 @@ function createLoginPageStore() {
       .then(async (userCredential) => {
         await updateProfile(userCredential.user, { displayName: nameValue });
         await sendEmailVerification(userCredential.user);
-        window.alert('Account created! Please check your email to verify your account before logging in.');
+        toast.success('Account created. Check your email to verify it before logging in.');
       })
       .catch((error) => {
         console.error('Sign-up error:', error);
-        window.alert(humanizeFirebaseError(error, 'signup'));
+        toast.error(humanizeFirebaseError(error, 'signup'));
       })
       .finally(() => {
         authLoading.value = false;
@@ -162,11 +165,12 @@ function createLoginPageStore() {
   function signInWithProvider(provider: GoogleAuthProvider | OAuthProvider | FacebookAuthProvider | TwitterAuthProvider) {
     signInWithPopup(auth, provider)
       .then(() => {
+        toast.success('Signed in successfully.');
         router.push('/dashboard');
       })
       .catch((error) => {
         console.error(error);
-        window.alert(humanizeFirebaseError(error, 'oauth'));
+        toast.error(humanizeFirebaseError(error, 'oauth'));
       });
   }
 
@@ -191,20 +195,20 @@ function createLoginPageStore() {
       const emailValue = email.value.trim();
 
       if (!emailValue) {
-        window.alert('Email cannot be blank.');
+        toast.error('Email cannot be blank.');
         return;
       }
 
       if (!validateEmail(emailValue)) {
-        window.alert('Please enter a valid email address.');
+        toast.error('Please enter a valid email address.');
         return;
       }
 
       await sendPasswordResetEmail(auth, emailValue);
-      window.alert('Password reset email sent!');
+      toast.success('Password reset email sent.');
     } catch (error) {
       console.error(error);
-      window.alert(humanizeFirebaseError(error, 'reset'));
+      toast.error(humanizeFirebaseError(error, 'reset'));
     }
   }
 

@@ -1,6 +1,7 @@
 import { addDoc, collection, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { useToast } from 'vue-toastification';
 import { db, storage } from '../firebase-init';
 import type { BuyerRequestedDoc, ChatDisplayItem, Message } from '../interfaces';
 import { normalizeMetadataValue } from '../interfaces';
@@ -10,6 +11,7 @@ import { useRequestNotifications } from './useRequestNotifications';
 
 export function useChatsPage() {
   const { user, authReady } = useAuthGuard();
+  const toast = useToast();
   const uploaderDocsData = ref<FirestoreRecord<BuyerRequestedDoc>[]>([]);
   const buyerDocsData = ref<FirestoreRecord<BuyerRequestedDoc>[]>([]);
   const currentDoc = ref<FirestoreRecord<BuyerRequestedDoc> | null>(null);
@@ -112,15 +114,12 @@ export function useChatsPage() {
   async function sendMessage() {
     if (!currentDoc.value || !user.value) return;
 
-    if (!inputData.value.trim() && !files) return;
+    if (!inputData.value.trim() && !files.value?.length) return;
 
     sending.value = true;
     const [docRef, docData] = currentDoc.value;
 
     try {
-
-      console.log("Files: ", files.value)
-
       const messageRef = await addDoc(collection(docRef, 'messages'), {
         text: inputData.value.trim() || undefined,
         sender: currentDocFromBuyerList.value ? docData.buyerName : docData.uploaderName,
@@ -149,6 +148,10 @@ export function useChatsPage() {
       }
 
       inputData.value = '';
+      files.value = null;
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      toast.error('Failed to send message.');
     } finally {
       sending.value = false;
     }

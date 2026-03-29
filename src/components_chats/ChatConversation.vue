@@ -3,13 +3,14 @@ import LoadingButton from '../components/LoadingButton.vue';
 import type { FirestoreRecord } from '../composables/firestore';
 import type { BuyerRequestedDoc, ChatDisplayItem } from '../interfaces';
 import { PaperclipIcon, SendIcon } from 'lucide-vue-next';
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 
 const props = defineProps<{
   currentDoc: FirestoreRecord<BuyerRequestedDoc> | null;
   displayItems: ChatDisplayItem[];
   currentUserId: string;
   inputValue: string;
+  selectedFiles: FileList | null;
   sending: boolean;
 }>();
 
@@ -21,6 +22,7 @@ const emit = defineEmits<{
 
 const attachmentInput = ref<HTMLInputElement | null>(null);
 const messagesContainer = ref<HTMLDivElement | null>(null);
+const attachmentPreviewUrls = ref<string[]>([]);
 const dateTimeFormatter = new Intl.DateTimeFormat('en-IN', {
   day: 'numeric',
   month: 'short',
@@ -51,6 +53,11 @@ function formatMessageDateTime(item: ChatDisplayItem) {
   return messageDate ? dateTimeFormatter.format(messageDate) : '';
 }
 
+function revokeAttachmentPreviewUrls() {
+  attachmentPreviewUrls.value.forEach((url) => URL.revokeObjectURL(url));
+  attachmentPreviewUrls.value = [];
+}
+
 async function scrollMessagesToBottom(behavior: ScrollBehavior = 'smooth') {
   await nextTick();
 
@@ -75,6 +82,25 @@ watch(
     void scrollMessagesToBottom('smooth');
   }
 );
+
+watch(
+  () => props.selectedFiles,
+  (nextFiles) => {
+    revokeAttachmentPreviewUrls();
+
+    if (!nextFiles?.length) {
+      if (attachmentInput.value) attachmentInput.value.value = '';
+      return;
+    }
+
+    attachmentPreviewUrls.value = Array.from(nextFiles).map((file) => URL.createObjectURL(file));
+  },
+  { immediate: true }
+);
+
+onBeforeUnmount(() => {
+  revokeAttachmentPreviewUrls();
+});
 </script>
 
 <template>
@@ -114,6 +140,9 @@ watch(
     </div>
 
     <form class="chat-panel__composer" @submit.prevent="$emit('submit')">
+      <div v-if="attachmentPreviewUrls.length" class="chat-panel__attachment-track">
+        <img v-for="(previewUrl, previewIndex) in attachmentPreviewUrls" :key="`${previewUrl}-${previewIndex}`" :src="previewUrl" :alt="`Pending attachment ${previewIndex + 1}`" class="chat-panel__attachment-preview" />
+      </div>
       <input :value="inputValue" type="text" placeholder="Write something..." @input="$emit('update:inputValue', ($event.target as HTMLInputElement).value)" />
       <LoadingButton
         :label="PaperclipIcon"
@@ -250,6 +279,24 @@ watch(
   flex-wrap: wrap;
   gap: 0.75rem;
   flex-shrink: 0;
+}
+
+.chat-panel__attachment-track {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.chat-panel__attachment-preview {
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 3rem;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
 }
 
 .chat-panel__composer input[type='text'] {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import LoadingButton from '../components/LoadingButton.vue';
 import type { FirestoreRecord } from '../composables/firestore';
 import type { useForm } from '../composables/useForm';
@@ -6,31 +7,38 @@ import type { UploadDoc } from '../interfaces';
 
 type PageForm = ReturnType<typeof useForm>;
 
-defineProps<{
+defineEmits<{
+  close: [];
+  submit: [];
+}>();
+
+const props = defineProps<{
   open: boolean;
   item: FirestoreRecord<UploadDoc> | null;
   requestForm: PageForm;
   submitLoading: boolean;
 }>();
 
-defineEmits<{
-  close: [];
-  submit: [];
-}>();
+const maxAvailableQuantity = computed(() => Math.max(props.item?.[1].quantity ?? 1, 1));
 </script>
 
 <template>
-  <div v-if="open && item" class="browser-modal">
+  <div v-if="props.open && props.item" class="browser-modal">
     <div class="browser-modal__backdrop" @click="$emit('close')"></div>
     <div class="browser-modal__panel">
       <button type="button" class="browser-modal__close" @click="$emit('close')">Close</button>
       <div class="browser-modal__body">
         <section class="browser-modal__details">
-          <h2>{{ item[1].title || 'Untitled' }}</h2>
-          <p>{{ item[1].grade || 'No grade' }}</p>
-          <p>{{ item[1].subject || 'No subject' }}</p>
-          <p>₹{{ item[1].price }}</p>
-          <img v-if="item[1].listingImage" class="browser-modal__image" :src="item[1].listingImage" alt="Book cover" />
+          <h2>{{ props.item[1].title || 'Untitled' }}</h2>
+          <div class="browser-modal__detail-grid">
+            <p><strong>Grade:</strong> {{ props.item[1].grade || 'No grade' }}</p>
+            <p><strong>Subject:</strong> {{ props.item[1].subject || 'No subject' }}</p>
+            <p><strong>Available:</strong> {{ props.item[1].quantity ?? 0 }}</p>
+            <p><strong>Price:</strong> ₹{{ props.item[1].price ?? 0 }}</p>
+            <p><strong>Uploader:</strong> {{ props.item[1].uploaderName || 'Unknown' }}</p>
+            <p><strong>ISBN:</strong> {{ props.item[1].isbn || 'Not provided' }}</p>
+          </div>
+          <img v-if="props.item[1].listingImage" class="browser-modal__image" :src="props.item[1].listingImage" alt="Book cover" />
         </section>
 
         <form class="browser-modal__form" @submit.prevent="$emit('submit')">
@@ -38,14 +46,15 @@ defineEmits<{
             <h3>Request details</h3>
             <label>
               Your name
-              <input v-model="requestForm.name.value" />
+              <input v-model="props.requestForm.name.value" />
             </label>
             <label>
               Quantity
-              <input v-model.number="requestForm.quantity.value" type="number" min="1" />
+              <input v-model.number="props.requestForm.quantity.value" type="number" min="1" :max="maxAvailableQuantity" />
             </label>
+            <p class="browser-modal__hint">Choose between 1 and {{ maxAvailableQuantity }}.</p>
           </section>
-          <LoadingButton type="submit" label="Send request" :loading="submitLoading" />
+          <LoadingButton type="submit" label="Send request" :loading="props.submitLoading" />
         </form>
       </div>
     </div>
@@ -106,6 +115,16 @@ defineEmits<{
   font-size: 1rem;
 }
 
+.browser-modal__detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.5rem 1rem;
+}
+
+.browser-modal__detail-grid p {
+  margin: 0;
+}
+
 .browser-modal__section {
   display: flex;
   flex-direction: column;
@@ -131,6 +150,13 @@ defineEmits<{
   border-radius: 12px;
   padding: 0.75rem;
   margin-bottom: 0.5rem;
+}
+
+.browser-modal__hint {
+  margin: 0;
+  font-family: 'Nunito';
+  font-size: 0.9rem;
+  color: rgba(15, 23, 42, 0.65);
 }
 
 .browser-modal__image {

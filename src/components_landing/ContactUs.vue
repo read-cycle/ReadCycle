@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useToast } from 'vue-toastification';
+import { createContactFormEmail } from '../emailTemplates';
 import { sendEmail } from "@/sendEmail";
 
+const toast = useToast();
 const name = ref("");
 const grade = ref("");
 const email = ref("");
@@ -15,27 +18,23 @@ async function handleSubmit() {
 
   const subject = `ReadCycle Contact Form – ${name.value} (${grade.value})`;
 
-  const body = `
-Name: ${name.value}
-Grade/Class: ${grade.value}
-Email: ${email.value}
-
-Message:
-${message.value}
-  `.trim();
-
   try {
     await sendEmail(
       "readcycle@inventureacademy.com",
       subject,
-      body
+      createContactFormEmail({
+        name: name.value,
+        grade: grade.value,
+        email: email.value,
+        message: message.value
+      })
     );
 
-    alert("Message sent successfully!");
+    toast.success('Message sent successfully.');
     resetForm();
   } catch (err) {
     console.error(err);
-    alert("Failed to send message. Please try again.");
+    toast.error('Failed to send message. Please try again.');
   } finally {
     loading.value = false;
   }

@@ -37,8 +37,8 @@ defineEmits<{
 
 .browser-results {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 300px);
-  grid-template-rows: repeat(auto-fill, 300px);
+  grid-template-columns: repeat(auto-fill, 320px);
+  grid-template-rows: repeat(auto-fill, 320px);
   gap: 1rem;
 }
 

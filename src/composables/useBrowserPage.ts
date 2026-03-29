@@ -1,6 +1,8 @@
 import { addDoc, collection, getDoc, getDocs, orderBy, query } from 'firebase/firestore';
 import { computed, ref, watch } from 'vue';
+import { useToast } from 'vue-toastification';
 import { db } from '../firebase-init';
+import { createBookRequestEmail } from '../emailTemplates';
 import type { BuyerRequestedDoc, UploadDoc } from '../interfaces';
 import { normalizeMetadataValue } from '../interfaces';
 import { sendEmail } from '../sendEmail';
@@ -11,6 +13,7 @@ import { useRequestNotifications } from './useRequestNotifications';
 
 export function useBrowserPage() {
   const { user, authReady } = useAuthGuard();
+  const toast = useToast();
   const loading = ref(true);
   const submitLoading = ref(false);
   const searchQuery = ref('');
@@ -76,6 +79,15 @@ export function useBrowserPage() {
     { immediate: true }
   );
 
+  watch(
+    selectedDoc,
+    (nextDoc) => {
+      const availableQuantity = nextDoc?.[1].quantity ?? 1;
+      requestForm.quantity.value = Math.min(Math.max(requestForm.quantity.value || 1, 1), Math.max(availableQuantity, 1));
+    },
+    { immediate: true }
+  );
+
   async function submitRequest() {
     if (!selectedDoc.value || !user.value || !user.value.email) return;
     if (!requestForm.validate(['name', 'quantity'])) return;
@@ -84,12 +96,39 @@ export function useBrowserPage() {
     try {
       const [docRef, docData] = selectedDoc.value;
       const latest = await getDoc(docRef);
-      if (!latest.exists()) return;
+      if (!latest.exists()) {
+        toast.error('This listing is no longer available.');
+        selectedDoc.value = null;
+        return;
+      }
+
+      const latestData = latest.data() as Partial<UploadDoc>;
+      const availableQuantity = typeof latestData.quantity === 'number' ? latestData.quantity : 0;
+
+      if (availableQuantity < 1) {
+        toast.error('This listing is no longer available.');
+        selectedDoc.value = null;
+        await loadBooks();
+        return;
+      }
+
+      if (requestForm.quantity.value > availableQuantity) {
+        requestForm.quantity.value = availableQuantity;
+        toast.info(`Quantity adjusted to ${availableQuantity}, which is the current amount available.`);
+        return;
+      }
 
       await sendEmail(
           docData.uploaderEmail,
           'Someone wants your book on ReadCycle',
-          `<p>${requestForm.payload.value.name} requested <b>${docData.title ?? 'your listing'}</b>.</p>`
+          createBookRequestEmail({
+            requesterName: requestForm.payload.value.name,
+            title: docData.title ?? 'Your listing',
+            buyerQuantity: requestForm.payload.value.quantity,
+            grade: docData.grade,
+            subject: docData.subject,
+            price: docData.price
+          })
       );
 
       await addDoc(collection(db, 'buyerRequested'), {
@@ -101,9 +140,15 @@ export function useBrowserPage() {
         listingDoc: docRef
       } as BuyerRequestedDoc);
 
+      requestForm.reset({
+        name: user.value.displayName || '',
+        quantity: 1
+      });
       selectedDoc.value = null;
+      toast.success('Request sent to the uploader.');
     } catch (error) {
       console.error('Failed to submit request:', error);
+      toast.error('Failed to submit request.');
     } finally {
       submitLoading.value = false;
     }
