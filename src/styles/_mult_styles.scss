@@ -1,0 +1,172 @@
+@use "variables" as *;
+@use "functions" as *;
+
+.multiselect {
+  min-height: 0;
+}
+
+.multiselect__select {
+  height: 100%;
+  width: 10%;
+  line-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.multiselect__select::before {
+  margin-top: 0;
+  top: 0;
+}
+
+.multiselect__tags {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0.5vw;
+
+  input {
+    font-family: 'Nunito' !important;
+  }
+}
+
+.multiselect__placeholder {
+  margin-bottom: 0;
+  font-family: 'Nunito';
+}
+
+.multiselect__tag {
+  background-color: $color-primary !important;
+  font-family: 'Nunito';
+  font-size: 12px;
+}
+
+.multiselect__option {
+  line-height: 0;
+  min-height: 2vh;
+  font-family: 'Nunito';
+}
+
+.multiselect__option--highlight {
+  background-color: $color-primary !important;
+  font-family: 'Nunito';
+}
+
+.multiselect__option--highlight::after {
+  background-color: $color-primary !important;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Nunito';
+}
+
+.multiselect__option--selected.multiselect__option--highlight {
+  background-color: #ff6a6a !important;
+}
+
+.multiselect__option--selected.multiselect__option--highlight::after {
+  background-color: #ff6a6a !important;
+}
+
+.multiselect__content-wrapper {
+  max-height: 20vh !important;
+}
+
+.multiselect__option--selected {
+  font-size: px-to-vw(20) !important;
+}
+
+@media screen and (max-width: 1025px) {
+  .multiselect__select::before {
+    border-width: px-to-vw(10) px-to-vw(10) 0 px-to-vw(10);
+  }
+  .multiselect__placeholder, .multiselect__single {
+    font-size: px-to-vw(32);
+  }
+  .multiselect__tags input {
+    font-size: px-to-vw(32);
+  }
+  .multiselect__option {
+    padding: 2vw;
+    font-size: px-to-vw(40);
+  }
+  .multiselect__option--highlight::after {
+    font-size: px-to-vw(25);
+  }
+}
+
+@media screen and (min-width: 1025px) {
+  .multiselect__select::before {
+    border-width: px-to-vw(5) px-to-vw(5) 0 px-to-vw(5);
+  }
+  .multiselect__placeholder, .multiselect__single {
+    font-size: px-to-vw(15);
+  }
+  .multiselect__tags input {
+    font-size: px-to-vw(15);
+  }
+  .multiselect__option {
+    padding: 1vw;
+    font-size: px-to-vw(15) !important;
+  }
+  .multiselect__option--highlight::after {
+    font-size: px-to-vw(5);
+  }
+}
+
+@media screen and (max-width: 950px) {
+  .multiselect__select::before {
+    border-width: px-to-vw(15) px-to-vw(15) 0 px-to-vw(15);
+  }
+  .multiselect__placeholder, .multiselect__single {
+    font-size: px-to-vw(35);
+  }
+  .multiselect__tags input {
+    font-size: px-to-vw(35);
+  }
+  .multiselect__option {
+    padding: 2.5vw;
+    font-size: px-to-vw(40);
+  }
+  .multiselect__option--highlight::after {
+    font-size: px-to-vw(30);
+  }
+}
+
+@media screen and (max-width: 550px) {
+  .multiselect__select::before {
+    border-width: px-to-vw(20) px-to-vw(20) 0 px-to-vw(20);
+  }
+  .multiselect__placeholder, .multiselect__single {
+    font-size: px-to-vw(52.5);
+  }
+  .multiselect__tags input {
+    font-size: px-to-vw(52.5);
+  }
+  .multiselect__option {
+    padding: 2.75vw;
+    font-size: px-to-vw(50);
+  }
+  .multiselect__option--highlight::after {
+    font-size: px-to-vw(25);
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    font-size: 15px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  h3 {
+    font-size: 1.1rem;
+  }
+}

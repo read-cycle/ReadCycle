@@ -1,0 +1,33 @@
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2015", "DOM", "ES2020"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "allowImportingTsExtensions": false,
+
+    "noEmit": true,
+
+    "declaration": false,
+    "declarationMap": false,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "BookMappings": ["src/assets/BookMappings.ts"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "src/**/*.d.ts",
+    "src/types/**/*.d.ts"
+  ]
+}

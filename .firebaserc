@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "book-exchange-22dd2"
+  },
+  "targets": {
+    "book-exchange-22dd2": {
+      "hosting": {
+        "readcycle-main": [
+          "readcycle-main"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
