@@ -26,6 +26,20 @@ let activePointerId: number | null = null
 let dragStartX = 0
 let dragStartScrollLeft = 0
 
+function setScrollLeftInstant(carousel: HTMLElement, left: number) {
+  const previousScrollBehavior = carousel.style.scrollBehavior
+  const previousScrollSnapType = carousel.style.scrollSnapType
+
+  carousel.style.scrollBehavior = 'auto'
+  carousel.style.scrollSnapType = 'none'
+  carousel.scrollLeft = left
+
+  requestAnimationFrame(() => {
+    carousel.style.scrollBehavior = previousScrollBehavior
+    carousel.style.scrollSnapType = previousScrollSnapType
+  })
+}
+
 function getBookSubtitle(book: UploadDoc) {
   return [book.grade, book.subject].filter(Boolean).join(' • ') || 'Available now'
 }
@@ -50,9 +64,9 @@ function normalizeScroll() {
   if (!loopWidth) return
 
   if (carousel.scrollLeft < loopWidth * 0.5) {
-    carousel.scrollLeft += loopWidth
+    setScrollLeftInstant(carousel, carousel.scrollLeft + loopWidth)
   } else if (carousel.scrollLeft >= loopWidth * 1.5) {
-    carousel.scrollLeft -= loopWidth
+    setScrollLeftInstant(carousel, carousel.scrollLeft - loopWidth)
   }
 }
 
@@ -104,7 +118,7 @@ function recenterCarousel() {
   const carousel = carouselRef.value
   const loopWidth = getLoopWidth()
   if (!carousel || !loopWidth) return
-  carousel.scrollLeft = loopWidth
+  setScrollLeftInstant(carousel, loopWidth)
 }
 
 function getCardStep() {
