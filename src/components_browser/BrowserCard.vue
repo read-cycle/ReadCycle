@@ -39,7 +39,8 @@ function formatTimestampToDDMMYY(ts: Timestamp) {
 .card-container {
     width: 100%;
     min-width: 0;
-    min-height: 100%;
+    height: 100%;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     border-radius: 10px;

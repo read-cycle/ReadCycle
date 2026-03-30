@@ -126,5 +126,9 @@ const { form, listingImage, extraImages, notifications, handleListingImage, hand
   .upload-sidebar {
     display: none;
   }
+
+  .upload-page {
+    padding-bottom: calc(1rem + var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom));
+  }
 }
 </style>

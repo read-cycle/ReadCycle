@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import LoginInput from './LoginInput.vue';
-import { Mail } from "lucide-vue-next";
-import { Lock } from "lucide-vue-next";
-import { User2 } from "lucide-vue-next";
-import { CircleCheckBig } from "lucide-vue-next";
+import { User, MailIcon, LockIcon, CheckCircle2 } from 'lucide-vue-next';
 import { useLoginPage } from '../composables/useLoginPage';
 
 const { email, password, name, confirmPassword, rememberMe, newUser, resetPassword } = useLoginPage();
+const { submitAuthForm } = useLoginPage();
 </script>
 
 <template>
@@ -18,9 +16,10 @@ const { email, password, name, confirmPassword, rememberMe, newUser, resetPasswo
       <LoginInput
         v-model="name"
         field-name="Name"
-        :field-icon="User2"
+        :field-icon="User"
         placeholder="John Doe"
         field-type="text"
+        @submit="submitAuthForm"
       />
     </div>
 
@@ -28,9 +27,10 @@ const { email, password, name, confirmPassword, rememberMe, newUser, resetPasswo
       <LoginInput
         v-model="email"
         field-name="Email"
-        :field-icon="Mail"
+        :field-icon="MailIcon"
         placeholder="example@abc.com"
         field-type="email"
+        @submit="submitAuthForm"
       />
     </div>
 
@@ -38,9 +38,10 @@ const { email, password, name, confirmPassword, rememberMe, newUser, resetPasswo
       <LoginInput
         v-model="password"
         field-name="Password"
-        :field-icon="Lock"
+        :field-icon="LockIcon"
         placeholder="••••••••"
         field-type="password"
+        @submit="submitAuthForm"
       />
     </div>
 
@@ -48,9 +49,10 @@ const { email, password, name, confirmPassword, rememberMe, newUser, resetPasswo
       <LoginInput
         v-model="confirmPassword"
         field-name="Verify Password"
-        :field-icon="CircleCheckBig"
+        :field-icon="CheckCircle2"
         placeholder="••••••••"
         field-type="password"
+        @submit="submitAuthForm"
       />
     </div>
 

@@ -40,6 +40,10 @@ defineEmits<{
   position: fixed;
   inset: 0;
   z-index: 1000;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .notifications-modal__backdrop {
@@ -51,15 +55,23 @@ defineEmits<{
 .notifications-modal__panel {
   position: relative;
   z-index: 1;
-  width: min(100% - 2rem, 520px);
-  margin: 5vh auto 0;
+  width: min(100%, 520px);
+  max-height: min(82dvh, 44rem);
   border-radius: 18px;
   background: $color-background;
   color: $color-text;
-  padding: 1.25rem;
+  padding: clamp(1rem, 2.4vw, 1.5rem);
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  overflow-y: auto;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
+}
+
+.notifications-modal__panel h2 {
+  margin: 0;
+  font-family: 'Manrope';
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
 }
 
 .notifications-modal__close {
@@ -69,6 +81,7 @@ defineEmits<{
   color: $color-accent;
   cursor: pointer;
   min-width: auto;
+  font-size: clamp(0.95rem, 1.5vw, 1rem);
 }
 
 .notifications-modal__content {
@@ -76,6 +89,7 @@ defineEmits<{
   flex-direction: column;
   gap: 0.5rem;
   font-family: 'Nunito';
+  font-size: clamp(0.95rem, 1.6vw, 1rem);
 }
 
 .notifications-modal__actions {
@@ -86,5 +100,26 @@ defineEmits<{
 
 .notifications-modal__actions :deep(.loading-button) {
   flex: 1 1 180px;
+}
+
+@media (max-width: 640px) {
+  .notifications-modal {
+    padding: 0.75rem;
+  }
+
+  .notifications-modal__panel {
+    width: 100%;
+    max-height: min(78dvh, 40rem);
+    border-radius: 20px 20px 16px 16px;
+  }
+
+  .notifications-modal__actions {
+    flex-direction: column;
+  }
+
+  .notifications-modal__actions :deep(.loading-button) {
+    width: 100%;
+    flex-basis: auto;
+  }
 }
 </style>

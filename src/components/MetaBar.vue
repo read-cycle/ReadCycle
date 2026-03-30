@@ -447,6 +447,8 @@ function closeSettingsModal() {
 @media screen and (max-width: 1025px) {
   .modal-settings-content {
     flex-direction: column;
+    width: min(100%, 760px) !important;
+    height: min(88dvh, 820px) !important;
   }
   .settings-sidebar {
     display: none;
@@ -454,6 +456,7 @@ function closeSettingsModal() {
   .text-container {
     width: 100%;
     height: 100%;
+    padding: clamp(1rem, 3vw, 1.5rem) !important;
   }
   .page-header {
     font-size: px-to-vw(60);
@@ -571,21 +574,22 @@ function closeSettingsModal() {
   }
 }
 .modal-settings-container {
-  position: absolute;
-  width: 100%;
-  height: 100vh;
-  left: 0;
-  top: 0;
+  position: fixed;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.75);
   z-index: 999;
+  padding: clamp(12px, 2vw, 24px);
   @extend %centered;
   .modal-settings-content {
     position: relative;
-    width: 75%;
-    height: 80%;
+    width: min(75%, 1100px);
+    height: min(80dvh, 760px);
+    max-height: calc(100dvh - 24px);
     background-color: $color-background;
     border-radius: 20px;
     display: flex;
+    overflow: hidden;
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.22);
     .settings-sidebar {
       overflow: hidden;
       width: 10%;
@@ -626,12 +630,12 @@ function closeSettingsModal() {
       }
     }
     .text-container {
-      overflow-y: scroll;
+      overflow-y: auto;
       padding: 3vw;
       display: flex;
       flex-direction: column;
       row-gap: 30px;
-      overflow-y: scroll;
+      min-width: 0;
       .content-container {
         position: relative;
         width: 100%;
@@ -680,7 +684,8 @@ function closeSettingsModal() {
             align-items: center;
             column-gap: 10px;
             width: 100%;
-            height: 50%;
+            min-height: 50%;
+            flex-wrap: wrap;
             .apply-settings-btn {
               background-color: transparent;
               border: 2px solid $color-primary;
@@ -739,7 +744,7 @@ function closeSettingsModal() {
   }
 }
 .form-input {
-  width: fit-content;
+  width: min(100%, 22rem);
   padding: 0.5vw 1vw;
   border-radius: 5px;
   border: 1px solid lightgray;
@@ -773,76 +778,96 @@ function closeSettingsModal() {
 }
 @media screen and (max-width: 1025px) {
   .form-input, .main-settings-account-container {
-    font-size: px-to-vw(20);
+    font-size: clamp(0.95rem, 2.3vw, 1.1rem);
   }
   .multiselect-wrapper {
     width: 40%;
   }
   .apply-settings-btn, .delete-acc-btn, .linked-account {
-    padding: 0.5vw 1vw;
-    font-size: px-to-vw(20);
+    padding: 0.6rem 0.9rem;
+    font-size: clamp(0.95rem, 2.3vw, 1.1rem);
   }
   .data-field-settings {
     label {
-      font-size: px-to-vw(24);
+      font-size: clamp(1rem, 2.5vw, 1.15rem);
     }
   }
   .content-container {
     h1 {
-      font-size: px-to-vw(48);
+      font-size: clamp(1.35rem, 3.4vw, 1.9rem);
     }
   }
 }
 @media screen and (max-width: 950px) {
   .form-input, .main-settings-account-container {
-    font-size: px-to-vw(30);
+    font-size: clamp(0.95rem, 2.8vw, 1.05rem);
   }
   .multiselect-wrapper {
     width: 50%;
   }
   .apply-settings-btn, .delete-acc-btn, .linked-account {
-    padding: 0.5vw 1vw;
-    font-size: px-to-vw(30);
+    padding: 0.7rem 0.95rem;
+    font-size: clamp(0.95rem, 2.8vw, 1.05rem);
   }
   .data-field-settings {
     label {
-      font-size: px-to-vw(38);
+      font-size: clamp(1rem, 3vw, 1.1rem);
     }
   }
   .content-container {
     h1 {
-      font-size: px-to-vw(55);
+      font-size: clamp(1.3rem, 3.6vw, 1.7rem);
     }
   }
 }
 @media screen and (max-width: 550px) {
+  .modal-settings-container {
+    padding: 0.5rem;
+  }
+  .modal-settings-content {
+    width: 100% !important;
+    height: min(90dvh, 820px) !important;
+    border-radius: 20px 20px 16px 16px !important;
+  }
   .form-input, .main-settings-account-container {
-    font-size: px-to-vw(50);
+    font-size: 0.95rem;
   }
   .multiselect-wrapper {
     width: 60%;
   }
   .apply-settings-btn, .delete-acc-btn, .linked-account {
-    padding: 1vw 2vw;
-    font-size: px-to-vw(50);
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
   }
   .data-field-settings {
     label {
-      font-size: px-to-vw(62);
+      font-size: 1rem;
     }
   }
   .content-container {
     h1 {
-      font-size: px-to-vw(80);
+      font-size: 1.35rem;
     }
   }
-  .linked-account-track {
-    width: 200%;
+  .linked-account-track,
+  .main-settings-account-container,
+  .data-field-settings {
+    width: 100%;
   }
   .linked-account {
+    max-width: 100%;
     p {
-      font-size: px-to-vw(50);
+      font-size: 0.95rem;
     }
+  }
+  .side-btn-track {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+  .form-input,
+  .apply-settings-btn,
+  .delete-acc-btn {
+    width: 100%;
   }
 }
 

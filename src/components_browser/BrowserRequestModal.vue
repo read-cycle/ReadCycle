@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import LoadingButton from '../components/LoadingButton.vue';
 import type { FirestoreRecord } from '../composables/firestore';
 import type { useForm } from '../composables/useForm';
@@ -20,6 +20,36 @@ const props = defineProps<{
 }>();
 
 const maxAvailableQuantity = computed(() => Math.max(props.item?.[1].quantity ?? 1, 1));
+const activeImageIndex = ref(0);
+
+const modalImages = computed(() => {
+  const item = props.item?.[1];
+  if (!item) return [];
+
+  return [item.listingImage, ...(item.extraImages || [])].filter(
+    (imageUrl): imageUrl is string => Boolean(imageUrl)
+  );
+});
+
+const activeImage = computed(() => modalImages.value[activeImageIndex.value] || '');
+
+watch(
+  () => props.item?.[0].id,
+  () => {
+    activeImageIndex.value = 0;
+  }
+);
+
+function showPreviousImage() {
+  if (!modalImages.value.length) return;
+  activeImageIndex.value =
+    (activeImageIndex.value - 1 + modalImages.value.length) % modalImages.value.length;
+}
+
+function showNextImage() {
+  if (!modalImages.value.length) return;
+  activeImageIndex.value = (activeImageIndex.value + 1) % modalImages.value.length;
+}
 </script>
 
 <template>
@@ -38,7 +68,22 @@ const maxAvailableQuantity = computed(() => Math.max(props.item?.[1].quantity ??
             <p><strong>Uploader:</strong> {{ props.item[1].uploaderName || 'Unknown' }}</p>
             <p><strong>ISBN:</strong> {{ props.item[1].isbn || 'Not provided' }}</p>
           </div>
-          <img v-if="props.item[1].listingImage" class="browser-modal__image" :src="props.item[1].listingImage" alt="Book cover" />
+
+          <div v-if="activeImage" class="browser-modal__gallery">
+            <img class="browser-modal__image" :src="activeImage" alt="Book photo" />
+
+            <div v-if="modalImages.length > 1" class="browser-modal__gallery-controls">
+              <button type="button" class="browser-modal__gallery-btn" @click="showPreviousImage">
+                ‹
+              </button>
+              <p class="browser-modal__gallery-count">
+                {{ activeImageIndex + 1 }} / {{ modalImages.length }}
+              </p>
+              <button type="button" class="browser-modal__gallery-btn" @click="showNextImage">
+                ›
+              </button>
+            </div>
+          </div>
         </section>
 
         <form class="browser-modal__form" @submit.prevent="$emit('submit')">
@@ -66,6 +111,10 @@ const maxAvailableQuantity = computed(() => Math.max(props.item?.[1].quantity ??
   position: fixed;
   inset: 0;
   z-index: 1000;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .browser-modal__backdrop {
@@ -77,11 +126,13 @@ const maxAvailableQuantity = computed(() => Math.max(props.item?.[1].quantity ??
 .browser-modal__panel {
   position: relative;
   z-index: 1;
-  width: min(100% - 2rem, 900px);
-  margin: 4vh auto 0;
+  width: min(100%, 900px);
+  max-height: min(88dvh, 50rem);
   border-radius: 18px;
   background: $color-background;
-  padding: 1.25rem;
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  overflow-y: auto;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
 }
 
 .browser-modal__close {
@@ -91,6 +142,7 @@ const maxAvailableQuantity = computed(() => Math.max(props.item?.[1].quantity ??
   cursor: pointer;
   margin-left: auto;
   display: block;
+  font-size: clamp(0.95rem, 1.5vw, 1rem);
 }
 
 .browser-modal__body {
@@ -106,13 +158,13 @@ const maxAvailableQuantity = computed(() => Math.max(props.item?.[1].quantity ??
 
 .browser-modal__details h2 {
   font-family: 'Manrope';
-  font-size: 1.5rem;
+  font-size: clamp(1.2rem, 2.6vw, 1.5rem);
   margin-bottom: 0.5rem;
 }
 
 .browser-modal__details p {
   font-family: 'Nunito';
-  font-size: 1rem;
+  font-size: clamp(0.95rem, 1.6vw, 1rem);
 }
 
 .browser-modal__detail-grid {
@@ -133,7 +185,7 @@ const maxAvailableQuantity = computed(() => Math.max(props.item?.[1].quantity ??
 
 .browser-modal__section h3 {
   font-family: 'Manrope';
-  font-size: 1.25rem;
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
   margin-bottom: 0.5rem;
 }
 
@@ -142,6 +194,7 @@ const maxAvailableQuantity = computed(() => Math.max(props.item?.[1].quantity ??
   flex-direction: column;
   gap: 0.375rem;
   font-family: 'Nunito';
+  font-size: clamp(0.95rem, 1.5vw, 1rem);
 }
 
 .browser-modal__section input {
@@ -150,6 +203,7 @@ const maxAvailableQuantity = computed(() => Math.max(props.item?.[1].quantity ??
   border-radius: 12px;
   padding: 0.75rem;
   margin-bottom: 0.5rem;
+  font-size: clamp(0.95rem, 1.5vw, 1rem);
 }
 
 .browser-modal__hint {
@@ -164,5 +218,60 @@ const maxAvailableQuantity = computed(() => Math.max(props.item?.[1].quantity ??
   margin-top: 1rem;
   border-radius: 18px;
   object-fit: cover;
+  aspect-ratio: 4 / 3;
+}
+
+.browser-modal__gallery {
+  margin-top: 1rem;
+}
+
+.browser-modal__gallery-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.browser-modal__gallery-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 999px;
+  background: rgba(58, 122, 254, 0.08);
+  color: $color-accent;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.browser-modal__gallery-count {
+  margin: 0;
+  font-family: 'Nunito';
+  font-size: 0.95rem;
+  color: rgba(15, 23, 42, 0.7);
+}
+
+@media (max-width: 640px) {
+  .browser-modal {
+    padding: 0.75rem;
+  }
+
+  .browser-modal__panel {
+    max-height: min(84dvh, 44rem);
+    border-radius: 20px 20px 16px 16px;
+  }
+
+  .browser-modal__body {
+    gap: 1.25rem;
+  }
+
+  .browser-modal__detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .browser-modal__form :deep(.loading-button) {
+    width: 100%;
+  }
 }
 </style>

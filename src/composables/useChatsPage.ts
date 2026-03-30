@@ -114,24 +114,32 @@ export function useChatsPage() {
   async function sendMessage() {
     if (!currentDoc.value || !user.value) return;
 
-    if (!inputData.value.trim() && !files.value?.length) return;
+    const trimmedText = inputData.value.trim();
+    const selectedFiles = files.value ? Array.from(files.value) : [];
+
+    if (!trimmedText && !selectedFiles.length) return;
 
     sending.value = true;
     const [docRef, docData] = currentDoc.value;
 
     try {
-      const messageRef = await addDoc(collection(docRef, 'messages'), {
-        text: inputData.value.trim() || undefined,
+      const messagePayload: Omit<Message, 'timestamp'> & { timestamp: ReturnType<typeof serverTimestamp> } = {
         sender: currentDocFromBuyerList.value ? docData.buyerName : docData.uploaderName,
         timestamp: serverTimestamp(),
-        type: files.value ? (inputData.value.trim() ? 'text+image' : 'image') : 'text',
+        type: selectedFiles.length ? (trimmedText ? 'text+image' : 'image') : 'text',
         senderID: user.value.uid
-      });
+      };
 
-      if (files.value && files.value.length > 0) {
+      if (trimmedText) {
+        messagePayload.text = trimmedText;
+      }
+
+      const messageRef = await addDoc(collection(docRef, 'messages'), messagePayload);
+
+      if (selectedFiles.length > 0) {
         const uploads = [];
 
-        for (const file of files.value) {
+        for (const file of selectedFiles) {
           const imageRef = storageRef(
             storage,
             `matched/${docRef.id}/${messageRef.id}/${file.name}`

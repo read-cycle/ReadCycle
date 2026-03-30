@@ -27,7 +27,25 @@ defineEmits<{
           <h3>Book details</h3>
           <label>
             ISBN
-            <input v-model="form.isbn.value" list="dashboard-isbn-options" @blur="form.runIsbnLookup" />
+            <input
+              v-model="form.isbn.value"
+              list="dashboard-isbn-options"
+              :class="{
+                'is-valid': form.isbnValidity.value === true,
+                'is-invalid': form.isbnValidity.value === false
+              }"
+              @blur="form.runIsbnLookup"
+            />
+            <span
+              v-if="form.isbnValidity.value !== null"
+              class="isbn-indicator"
+              :class="{
+                'isbn-indicator--valid': form.isbnValidity.value === true,
+                'isbn-indicator--invalid': form.isbnValidity.value === false
+              }"
+            >
+              {{ form.isbnValidity.value ? 'Valid ISBN' : 'Invalid ISBN' }}
+            </span>
           </label>
           <datalist id="dashboard-isbn-options">
             <option v-for="option in form.isbnOptions" :key="option" :value="option" />
@@ -77,6 +95,10 @@ defineEmits<{
   position: fixed;
   inset: 0;
   z-index: 1000;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .watchlist-modal__backdrop {
@@ -88,19 +110,22 @@ defineEmits<{
 .watchlist-modal__panel {
   position: relative;
   z-index: 1;
-  width: min(100% - 2rem, 760px);
-  margin: 4vh auto 0;
+  width: min(100%, 760px);
+  max-height: min(88dvh, 48rem);
   border-radius: 18px;
   background: $color-background;
-  padding: 1.25rem;
+  padding: clamp(1rem, 2.5vw, 1.5rem);
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  overflow-y: auto;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
 }
 
 .watchlist-modal__panel h2 {
   font-family: 'Manrope';
-  font-size: 1.5rem;
+  font-size: clamp(1.2rem, 2.4vw, 1.5rem);
+  margin: 0;
 }
 
 .watchlist-modal__close {
@@ -109,6 +134,7 @@ defineEmits<{
   border: none;
   background: transparent;
   cursor: pointer;
+  font-size: clamp(0.95rem, 1.5vw, 1rem);
 }
 
 .watchlist-form {
@@ -126,7 +152,7 @@ defineEmits<{
 
 .watchlist-form__section h3 {
   font-family: 'Manrope';
-  font-size: 1.125rem;
+  font-size: clamp(1rem, 1.8vw, 1.125rem);
 }
 
 .watchlist-form__section label {
@@ -134,6 +160,7 @@ defineEmits<{
   flex-direction: column;
   gap: 0.375rem;
   font-family: 'Nunito';
+  font-size: clamp(0.95rem, 1.5vw, 1rem);
 }
 
 .watchlist-form__section input {
@@ -141,5 +168,42 @@ defineEmits<{
   border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 12px;
   padding: 0.75rem;
+  font-size: clamp(0.95rem, 1.5vw, 1rem);
+}
+
+.watchlist-form__section input.is-valid {
+  border-color: #18cda6;
+}
+
+.watchlist-form__section input.is-invalid {
+  border-color: #dc2626;
+}
+
+.isbn-indicator {
+  font-size: 0.85rem;
+}
+
+.isbn-indicator--valid {
+  color: #17826d;
+}
+
+.isbn-indicator--invalid {
+  color: #dc2626;
+}
+
+@media (max-width: 640px) {
+  .watchlist-modal {
+    padding: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .watchlist-modal__panel {
+    max-height: min(84dvh, 44rem);
+    border-radius: 20px 20px 16px 16px;
+  }
+
+  :deep(.loading-button) {
+    width: 100%;
+  }
 }
 </style>

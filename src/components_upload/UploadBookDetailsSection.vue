@@ -15,7 +15,25 @@ defineProps<{
     <div class="upload-form__fields">
       <label>
         ISBN
-        <input v-model="form.isbn.value" list="upload-isbn-options" @blur="form.runIsbnLookup" />
+        <input
+          v-model="form.isbn.value"
+          list="upload-isbn-options"
+          :class="{
+            'is-valid': form.isbnValidity.value === true,
+            'is-invalid': form.isbnValidity.value === false
+          }"
+          @blur="form.runIsbnLookup"
+        />
+        <span
+          v-if="form.isbnValidity.value !== null"
+          class="isbn-indicator"
+          :class="{
+            'isbn-indicator--valid': form.isbnValidity.value === true,
+            'isbn-indicator--invalid': form.isbnValidity.value === false
+          }"
+        >
+          {{ form.isbnValidity.value ? 'Valid ISBN' : 'Invalid ISBN' }}
+        </span>
       </label>
       <datalist id="upload-isbn-options">
         <option v-for="option in form.isbnOptions" :key="option" :value="option" />
@@ -89,6 +107,26 @@ defineProps<{
   border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 12px;
   padding: 0.75rem;
+}
+
+.upload-form__fields input.is-valid {
+  border-color: #18cda6;
+}
+
+.upload-form__fields input.is-invalid {
+  border-color: #dc2626;
+}
+
+.isbn-indicator {
+  font-size: 0.85rem;
+}
+
+.isbn-indicator--valid {
+  color: #17826d;
+}
+
+.isbn-indicator--invalid {
+  color: #dc2626;
 }
 
 .upload-form__lookup {

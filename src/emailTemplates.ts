@@ -13,13 +13,13 @@ function renderMetaRows(rows: Array<{ label: string; value: string | null | unde
   if (!visibleRows.length) return '';
 
   return `
-    <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;margin-top:24px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;">
+    <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;margin-top:24px;background:#f3fcfa;border:1px solid #cfeee6;border-radius:16px;overflow:hidden;">
       ${visibleRows
         .map(
           (row) => `
             <tr>
-              <td style="padding:12px 16px;font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:#0f172a;width:34%;border-bottom:1px solid #e2e8f0;">${escapeHtml(row.label)}</td>
-              <td style="padding:12px 16px;font-family:Arial,sans-serif;font-size:13px;color:#334155;border-bottom:1px solid #e2e8f0;">${escapeHtml(String(row.value))}</td>
+              <td style="padding:12px 16px;font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:#1c6758;width:34%;border-bottom:1px solid #cfeee6;">${escapeHtml(row.label)}</td>
+              <td style="padding:12px 16px;font-family:Arial,sans-serif;font-size:13px;color:#355f56;border-bottom:1px solid #cfeee6;">${escapeHtml(String(row.value))}</td>
             </tr>
           `
         )
@@ -41,29 +41,29 @@ export function createEmailLayout(options: {
   return `
     <!doctype html>
     <html lang="en">
-      <body style="margin:0;padding:32px 16px;background:#eef2ff;">
+      <body style="margin:0;padding:32px 16px;background:#eaf8f4;">
         <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
           <tr>
             <td align="center">
-              <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;max-width:640px;border-collapse:collapse;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 24px 60px rgba(15,23,42,0.12);">
+              <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;max-width:640px;border-collapse:collapse;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 24px 60px rgba(28,103,88,0.14);">
                 <tr>
-                  <td style="padding:32px 32px 20px;background:linear-gradient(135deg,#1d4ed8 0%,#0f172a 100%);">
-                    <div style="font-family:Arial,sans-serif;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.72);margin-bottom:12px;">${escapeHtml(options.eyebrow ?? 'ReadCycle')}</div>
+                  <td style="padding:32px 32px 20px;background:linear-gradient(135deg,#26e5bc 0%,#1c6758 100%);">
+                    <div style="font-family:Arial,sans-serif;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.8);margin-bottom:12px;">${escapeHtml(options.eyebrow ?? 'ReadCycle')}</div>
                     <div style="font-family:Arial,sans-serif;font-size:30px;line-height:1.15;font-weight:700;color:#ffffff;">${escapeHtml(options.title)}</div>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:32px;">
-                    <p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:16px;line-height:1.7;color:#334155;">${escapeHtml(options.intro)}</p>
-                    <div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.7;color:#475569;">
+                    <p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:16px;line-height:1.7;color:#355f56;">${escapeHtml(options.intro)}</p>
+                    <div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.7;color:#4e6f67;">
                       ${options.bodyHtml}
                     </div>
                     ${renderMetaRows(options.metaRows ?? [])}
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding:20px 32px 32px;border-top:1px solid #e2e8f0;">
-                    <p style="margin:0;font-family:Arial,sans-serif;font-size:12px;line-height:1.6;color:#64748b;">${escapeHtml(footer)}</p>
+                  <td style="padding:20px 32px 32px;border-top:1px solid #cfeee6;">
+                    <p style="margin:0;font-family:Arial,sans-serif;font-size:12px;line-height:1.6;color:#65837c;">${escapeHtml(footer)}</p>
                   </td>
                 </tr>
               </table>
@@ -162,7 +162,7 @@ export function createContactFormEmail(options: {
     title: 'New message from the website',
     intro: `${options.name} sent a new message through the ReadCycle contact form.`,
     bodyHtml: `
-      <div style="padding:16px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;white-space:pre-wrap;">${escapeHtml(options.message)}</div>
+      <div style="padding:16px 18px;background:#f3fcfa;border:1px solid #cfeee6;border-radius:16px;white-space:pre-wrap;">${escapeHtml(options.message)}</div>
     `,
     metaRows: [
       { label: 'Name', value: options.name },

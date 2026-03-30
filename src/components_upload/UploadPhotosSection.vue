@@ -27,7 +27,7 @@ function handleExtraImages(value: File[] | null) {
       <div class="uploader-card">
         <div class="uploader-card__header">
           <h3>Listing image</h3>
-          <span v-if="listingImageName" class="caption">{{ listingImageName }}</span>
+          <span v-if="listingImageName" class="caption caption--filename" :title="listingImageName">{{ listingImageName }}</span>
         </div>
         <ImageUploader :multiple="false" @update:modelValue="handleListingImage" />
       </div>
@@ -77,19 +77,37 @@ function handleExtraImages(value: File[] | null) {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  gap: 0.75rem;
   height: fit-content;
+  min-width: 0;
 }
 
 .uploader-card__header h3 {
   margin: 0;
   font-family: 'Manrope';
   font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
 .caption {
   font-family: 'Nunito';
   font-size: 0.9rem;
   color: $color-text-secondary;
+}
+
+.caption--filename {
+  min-width: 0;
+  max-width: min(55%, 18rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .caption--filename {
+    max-width: min(50vw, 12rem);
+  }
 }
 
 .uploader-card ImageUploader {

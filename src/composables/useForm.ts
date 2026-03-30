@@ -82,6 +82,11 @@ export function useForm() {
     'Bridge Program'
   ];
   const subjectOptions = Array.from(new Set(Object.values(isbnToSubject)));
+  const isbnValidity = computed<null | boolean>(() => {
+    const raw = isbn.value.replace(/[-\s]/g, '');
+    if (!raw) return null;
+    return ISBN.isValid(raw);
+  });
 
   function setField(field: 'isbn' | 'title' | 'grade' | 'subject' | 'name', value: string, manual = true) {
     if (field === 'isbn') isbn.value = value;
@@ -176,6 +181,7 @@ export function useForm() {
     const nextErrors: Record<string, string> = {};
 
     if (requiredFields.includes('isbn') && !isbn.value.trim()) nextErrors.isbn = 'ISBN is required.';
+    if (requiredFields.includes('isbn') && isbn.value.trim() && isbnValidity.value === false) nextErrors.isbn = 'ISBN must be valid.';
     if (requiredFields.includes('title') && !title.value.trim()) nextErrors.title = 'Title is required.';
     if (requiredFields.includes('grade') && !grade.value.trim()) nextErrors.grade = 'Grade is required.';
     if (requiredFields.includes('subject') && !subject.value.trim()) nextErrors.subject = 'Subject is required.';
@@ -228,6 +234,7 @@ export function useForm() {
     errors,
     status,
     isbnLookupLoading,
+    isbnValidity,
     autoFilled,
     isbnOptions,
     titleOptions,

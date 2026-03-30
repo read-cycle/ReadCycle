@@ -37,13 +37,21 @@ defineEmits<{
 
 .browser-results {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 320px);
-  grid-template-rows: repeat(auto-fill, 320px);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 320px));
+  grid-auto-rows: 320px;
   gap: 1rem;
+  justify-content: center;
 }
 
 .browser-results :deep(.browsercard-container) {
-  flex: 1 1 280px;
+  height: 100%;
+}
+
+@media (max-width: 640px) {
+  .browser-results {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: 320px;
+  }
 }
 
 .browser-empty {

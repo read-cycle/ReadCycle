@@ -307,4 +307,75 @@ onBeforeUnmount(() => {
   padding: 0.75rem;
   font-family: 'Nunito';
 }
+
+.chat-panel__composer :deep(.loading-button) {
+  min-width: 48px;
+  width: 48px;
+  height: 48px;
+  padding: 0.65rem;
+  flex: 0 0 48px;
+}
+
+@media (max-width: 640px) {
+  .chat-panel {
+    min-height: 60dvh;
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .chat-panel__header h2 {
+    font-size: 1.05rem;
+  }
+
+  .chat-panel__header p,
+  .chat-panel__price {
+    font-size: 0.78rem;
+  }
+
+  .chat-panel__messages {
+    gap: 0.625rem;
+  }
+
+  .chat-message {
+    max-width: min(100%, 18rem);
+    padding: 0.625rem;
+    border-radius: 14px;
+  }
+
+  .chat-message__author {
+    font-size: 0.78rem;
+  }
+
+  .chat-message__timestamp {
+    font-size: 0.68rem;
+  }
+
+  .chat-message__body p {
+    font-size: 0.9rem;
+  }
+
+  .chat-panel__attachment-preview {
+    width: 2.5rem;
+    height: 2.5rem;
+    flex-basis: 2.5rem;
+  }
+
+  .chat-panel__composer {
+    gap: 0.5rem;
+  }
+
+  .chat-panel__composer input[type='text'] {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .chat-panel__composer :deep(.loading-button) {
+    min-width: 42px;
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    padding: 0.55rem;
+    border-radius: 10px;
+  }
+}
 </style>

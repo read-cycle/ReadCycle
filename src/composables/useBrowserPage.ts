@@ -126,7 +126,7 @@ export function useBrowserPage() {
         quantity: 1
       });
       selectedDoc.value = null;
-      toast.success('Request sent to the uploader.');
+      toast.success('Request sent. The uploader has been notified.');
     } catch (error) {
       console.error('Failed to submit request:', error);
       toast.error('Failed to submit request.');

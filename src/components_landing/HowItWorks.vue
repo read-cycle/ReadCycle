@@ -79,7 +79,7 @@ const indicatorStyle = computed(() => ({
 </script>
 
 <template>
-  <section class="how-it-works-section" aria-labelledby="how-it-works-heading">
+  <section id="how-it-works" class="how-it-works-section" aria-labelledby="how-it-works-heading">
     <div class="section-inner">
       <div class="copy-block">
         <p class="section-kicker">How It Works</p>

@@ -151,6 +151,7 @@ export function useDashboardPage() {
       await moveRequestToMatched(item);
       notifications.closeNotification();
       await loadDashboardData();
+      toast.success('Request accepted. A chat has been created.');
     } finally {
       notifications.notificationLoading.value = false;
     }

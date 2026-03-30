@@ -33,4 +33,15 @@ defineEmits<{
   font-family: 'Manrope';
   font-size: 1rem;
 }
+
+@media (max-width: 640px) {
+  .chat-list {
+    padding: 0.75rem;
+  }
+
+  .chat-list h3 {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+  }
+}
 </style>

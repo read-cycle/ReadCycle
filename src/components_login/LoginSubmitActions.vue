@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import LoadingButton from '../components/LoadingButton.vue';
 import { useLoginPage } from '../composables/useLoginPage';
 
 const { authLoading, newUser } = useLoginPage();
@@ -8,20 +7,22 @@ const { authLoading, newUser } = useLoginPage();
 <template>
   <div class="login-btn-container">
     <div class="login-btn-wrapper">
-      <LoadingButton
+      <button
         v-if="!newUser"
         type="submit"
         class="login-btn"
-        label="Log In"
-        :loading="authLoading"
-      />
-      <LoadingButton
+        :disabled="authLoading"
+      >
+        Log In
+      </button>
+      <button
         v-else
         type="submit"
         class="login-btn"
-        label="Sign Up"
-        :loading="authLoading"
-      />
+        :disabled="authLoading"
+      >
+        Sign Up
+      </button>
     </div>
 
     <p v-if="!newUser" class="sign-up" @click="newUser = true">Don't have an account? Sign Up</p>

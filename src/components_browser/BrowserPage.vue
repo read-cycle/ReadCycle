@@ -49,5 +49,9 @@ const { loading, submitLoading, searchQuery, filteredDocs, selectedDoc, requestF
   .browser-sidebar {
     display: none;
   }
+
+  .browser-page {
+    padding-bottom: calc(1rem + var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom));
+  }
 }
 </style>

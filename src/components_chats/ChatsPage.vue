@@ -102,5 +102,32 @@ const { uploaderDocsData, buyerDocsData, currentDoc, displayItems, inputData, se
   .chats-sidebar {
     display: none;
   }
+
+  .chats-page {
+    height: auto;
+    min-height: calc(100dvh - env(safe-area-inset-bottom));
+    padding-bottom: calc(1rem + var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom));
+    overflow: auto;
+  }
+
+  .chats-layout {
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .chats-sidebar-panel {
+    flex: 0 0 auto;
+    gap: 0.75rem;
+  }
+
+  .chats-loading,
+  .chats-empty {
+    margin-bottom: 0.5rem;
+  }
+
+  .chat-list {
+    min-height: 10rem;
+    max-height: 14rem;
+  }
 }
 </style>

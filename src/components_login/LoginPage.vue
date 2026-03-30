@@ -33,61 +33,47 @@ const { submitAuthForm } = provideLoginPage();
   :deep(.tooltip) {
     font-size: px-to-vw(10);
   }
-
   .text-half-login {
     padding: px-to-vw(60);
   }
-
-  :deep(input[type="checkbox"]) {
+  :deep(input[type='checkbox']) {
     width: px-to-vw(18);
     height: px-to-vw(18);
   }
-
   :deep(.divider-container) {
     font-size: px-to-vw(14);
   }
-
   :deep(.sign-up) {
     font-size: px-to-vw(14);
   }
-
   :deep(.alt-login svg) {
     width: px-to-vw(20);
     height: px-to-vw(20);
   }
-
   :deep(.login-logo) {
     font-size: px-to-vw(15);
   }
-
   :deep(.login-logo .logo-icon) {
     width: px-to-vw(25);
   }
-
   .login-box {
-    aspect-ratio: 2/1;
+    aspect-ratio: 2 / 1;
   }
-
   :deep(.login-header) {
     font-size: 3vw;
   }
-
   :deep(.login-para) {
     font-size: px-to-vw(15);
   }
-
   :deep(.social-hint) {
     font-size: px-to-vw(13);
   }
-
   :deep(.login-btn) {
     font-size: px-to-vw(20);
   }
-
   :deep(.forgot-password) {
     font-size: px-to-vw(14);
   }
-
   :deep(.remember-me-container) {
     font-size: px-to-vw(14);
   }
@@ -97,61 +83,47 @@ const { submitAuthForm } = provideLoginPage();
   :deep(.tooltip) {
     font-size: px-to-vw(12);
   }
-
   .text-half-login {
     padding: px-to-vw(50);
   }
-
-  :deep(input[type="checkbox"]) {
+  :deep(input[type='checkbox']) {
     width: px-to-vw(18);
     height: px-to-vw(18);
   }
-
   :deep(.divider-container) {
     font-size: px-to-vw(18);
   }
-
   :deep(.sign-up) {
     font-size: px-to-vw(14);
   }
-
   :deep(.alt-login svg) {
     width: px-to-vw(20);
     height: px-to-vw(20);
   }
-
   :deep(.login-logo) {
     font-size: px-to-vw(15);
   }
-
   :deep(.login-logo .logo-icon) {
     width: px-to-vw(25);
   }
-
   .login-box {
-    aspect-ratio: 2/1;
+    aspect-ratio: 2 / 1;
   }
-
   :deep(.login-header) {
     font-size: px-to-vw(59);
   }
-
   :deep(.login-para) {
     font-size: px-to-vw(18);
   }
-
   :deep(.social-hint) {
     font-size: px-to-vw(13);
   }
-
   :deep(.login-btn) {
     font-size: px-to-vw(20);
   }
-
   :deep(.forgot-password) {
     font-size: px-to-vw(16);
   }
-
   :deep(.remember-me-container) {
     font-size: px-to-vw(16);
   }
@@ -161,65 +133,50 @@ const { submitAuthForm } = provideLoginPage();
   :deep(.tooltip) {
     font-size: px-to-vw(30);
   }
-
   .text-half-login {
     padding: px-to-vw(80);
   }
-
-  :deep(input[type="checkbox"]) {
+  :deep(input[type='checkbox']) {
     width: px-to-vw(28);
     height: px-to-vw(28);
   }
-
   :deep(.sign-up) {
     font-size: px-to-vw(28);
   }
-
   :deep(.alt-login svg) {
     width: px-to-vw(45);
     height: px-to-vw(45);
   }
-
   .graphic-half-login {
     display: none;
   }
-
   .login-box {
-    aspect-ratio: 4/5;
+    aspect-ratio: 4 / 5;
   }
-
   :deep(.login-logo) {
     font-size: px-to-vw(45);
   }
-
   :deep(.login-logo .logo-icon) {
     width: px-to-vw(75);
   }
-
   :deep(.login-header) {
     font-size: px-to-vw(118);
   }
-
   :deep(.login-para) {
     font-size: px-to-vw(37.5);
   }
-
   :deep(.social-hint) {
     font-size: px-to-vw(34);
   }
-
   :deep(.login-btn) {
     font-size: px-to-vw(50);
   }
-
   :deep(.forgot-password) {
     font-size: px-to-vw(35);
   }
-
   :deep(.remember-me-container) {
     font-size: px-to-vw(35);
   }
-
   :deep(.divider-container) {
     font-size: px-to-vw(40);
   }
@@ -229,65 +186,50 @@ const { submitAuthForm } = provideLoginPage();
   :deep(.tooltip) {
     font-size: px-to-vw(30);
   }
-
   .text-half-login {
     padding: px-to-vw(60);
   }
-
-  :deep(input[type="checkbox"]) {
+  :deep(input[type='checkbox']) {
     width: px-to-vw(36);
     height: px-to-vw(36);
   }
-
   :deep(.sign-up) {
     font-size: px-to-vw(28);
   }
-
   :deep(.alt-login svg) {
     width: px-to-vw(45);
     height: px-to-vw(45);
   }
-
   .graphic-half-login {
     display: none;
   }
-
   .login-box {
-    aspect-ratio: 4/5;
+    aspect-ratio: 4 / 5;
   }
-
   :deep(.login-logo) {
     font-size: px-to-vw(45);
   }
-
   :deep(.login-logo .logo-icon) {
     width: px-to-vw(75);
   }
-
   :deep(.login-header) {
     font-size: px-to-vw(118);
   }
-
   :deep(.login-para) {
     font-size: px-to-vw(37.5);
   }
-
   :deep(.social-hint) {
     font-size: px-to-vw(34);
   }
-
   :deep(.login-btn) {
     font-size: px-to-vw(50);
   }
-
   :deep(.forgot-password) {
     font-size: px-to-vw(35);
   }
-
   :deep(.remember-me-container) {
     font-size: px-to-vw(35);
   }
-
   :deep(.divider-container) {
     font-size: px-to-vw(50);
   }
@@ -303,7 +245,7 @@ const { submitAuthForm } = provideLoginPage();
   opacity: 0;
 }
 
-:deep(input[type="checkbox"]) {
+:deep(input[type='checkbox']) {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -314,12 +256,12 @@ const { submitAuthForm } = provideLoginPage();
   transition: background 0.2s ease;
 }
 
-:deep(input[type="checkbox"]:checked) {
+:deep(input[type='checkbox']:checked) {
   background-color: $color-primary;
   border-color: transparent;
 }
 
-:deep(input[type="checkbox"]:checked::after) {
+:deep(input[type='checkbox']:checked::after) {
   content: '';
   position: absolute;
   top: 40%;
@@ -334,7 +276,7 @@ const { submitAuthForm } = provideLoginPage();
 
 .login-container {
   color: $color-text;
-  width: 100dvw;
+  width: 100%;
   height: 100dvh;
   display: flex;
   align-items: center;
@@ -492,6 +434,11 @@ const { submitAuthForm } = provideLoginPage();
   box-shadow: 0 0 0 4px $color-primary;
 }
 
+:deep(.login-btn:disabled) {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 :deep(.login-inputs) {
   display: flex;
   flex-direction: column;
@@ -520,69 +467,70 @@ const { submitAuthForm } = provideLoginPage();
 :deep(.remember-me-container) {
   display: flex;
   align-items: center;
-  column-gap: 7px;
+  column-gap: 5px;
+  color: $color-accent;
 }
 
 :deep(.alternatives-container) {
-  grid-row: 7 / 9;
-  width: 50%;
-  display: flex;
-  align-content: center;
-  justify-content: space-between;
-}
-
-:deep(.alt-login) {
-  width: 20%;
-  aspect-ratio: 1 / 1;
-  border-radius: 50%;
-  border: $color-background 1px 1px;
   display: flex;
   align-items: center;
   justify-content: center;
+  column-gap: 5px;
+  grid-row: 6 / 8;
+}
+
+:deep(.alt-login) {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 30px;
+  border: none;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  background-color: $color-secondary;
+  border: 2px solid $color-background;
+  transition: box-shadow 0.4s ease;
 }
 
 :deep(.alt-login:hover) {
-  transform: translateY(-2px);
-}
-
-:deep(.alt-login svg) {
-  fill: $color-accent;
-}
-
-:deep(.tooltip) {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-  bottom: 115%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.75);
-  color: white;
-  padding: 0.35em 0.7em;
-  border-radius: 999px;
-  transition: opacity 0.2s ease;
-  white-space: nowrap;
+  box-shadow: 0 0 0 2px $color-primary;
 }
 
 :deep(.alt-login:hover .tooltip) {
   opacity: 1;
 }
 
+:deep(.alt-login .tooltip) {
+  position: absolute;
+  width: 110%;
+  height: 50%;
+  top: -50%;
+  left: -5%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  opacity: 0;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  padding: 10px;
+  transition: opacity 500ms ease-in-out;
+}
+
 :deep(.divider-container) {
   grid-row: 9 / 10;
-  width: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  column-gap: 12px;
+  column-gap: 10px;
+  width: 100%;
 }
 
 :deep(.divider-container hr) {
   width: 100%;
-  border: none;
-  border-top: 1px solid rgba($color-text, 0.2);
+  height: 1px;
+  margin-top: px-to-vw(2.5);
+  opacity: 0.5;
 }
 </style>

@@ -1,34 +1,39 @@
 <script setup lang="ts">
 import { ref, computed, defineEmits } from 'vue';
-import {X, Eye, EyeClosed, type LucideIcon} from 'lucide-vue-next'
+import { X, Eye, EyeClosed, type LucideIcon } from 'lucide-vue-next';
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void
-}>()
+  (e: 'update:modelValue', value: string): void;
+  (e: 'submit'): void;
+}>();
 
 const props = defineProps<{
-  modelValue: string,
-  fieldName: string,
-  placeholder?: string,
-  fieldIcon?: LucideIcon,
-  fieldType?: 'text' | 'password' | 'email'
-}>()
+  modelValue: string;
+  fieldName: string;
+  placeholder?: string;
+  fieldIcon?: LucideIcon;
+  fieldType?: 'text' | 'password' | 'email';
+}>();
 
-const passwordHidden = ref(true)
-const inputRef = ref<HTMLInputElement | null>(null)
+const passwordHidden = ref(true);
+const inputRef = ref<HTMLInputElement | null>(null);
 
-const isPassword = computed(() => props.fieldType === 'password')
+const isPassword = computed(() => props.fieldType === 'password');
 
 const inputType = computed(() => {
-  if (isPassword.value) return 'password'
-  return props.fieldType || 'text'
-})
+  if (isPassword.value) return 'password';
+  return props.fieldType || 'text';
+});
 
 function clearInput() {
   if (inputRef.value) {
-    inputRef.value.value = ""
-    emit('update:modelValue', "")
+    inputRef.value.value = '';
+    emit('update:modelValue', '');
   }
+}
+
+function handleEnterKey() {
+  emit('submit');
 }
 
 const input_pwd = ref();
@@ -50,31 +55,32 @@ const input_pwd = ref();
 
       <input
         ref="inputRef"
-        :type="inputType == 'password' && !passwordHidden ? 'text' : inputType"
+        :type="inputType === 'password' && !passwordHidden ? 'text' : inputType"
         class="input-box"
         :placeholder="placeholder"
-        :style="[
-          { marginRight: isPassword ? '25%' : '15%' },
-        ]"
+        :style="[{ marginRight: isPassword ? '25%' : '15%' }]"
         v-model="input_pwd"
         :value="modelValue"
         autocomplete="on"
         @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+        @keydown.enter.prevent="handleEnterKey"
       />
 
       <div class="optional-buttons">
-        <div class="optional-deleter" @click="clearInput">
-          <X></X>
-        </div>
+        <button type="button" class="optional-deleter" @click="clearInput">
+          <X />
+        </button>
 
-        <div
+        <button
+          type="button"
           class="optional-hider"
           v-if="isPassword"
           @click="passwordHidden = !passwordHidden"
+          :aria-label="passwordHidden ? 'Show password' : 'Hide password'"
         >
           <EyeClosed v-if="passwordHidden" />
           <Eye v-else />
-        </div>
+        </button>
       </div>
     </fieldset>
   </div>
@@ -193,12 +199,16 @@ const input_pwd = ref();
     transform: translateY(-50%);
     height: 50%;
     left: 75%;
-    div {
+    button {
         width: 50%;
+        height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
+        border: none;
+        background: transparent;
+        padding: 0;
         svg {
             width: 75%;
             transition: color 200ms ease-in-out;

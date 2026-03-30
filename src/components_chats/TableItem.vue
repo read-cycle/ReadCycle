@@ -73,4 +73,27 @@ const imageUrl = computed(() => props.docData[1].listingImage);
   margin-left: auto;
   font-family: 'Nunito';
 }
+
+@media (max-width: 640px) {
+  .chat-list-item {
+    gap: 0.625rem;
+    padding: 0.625rem 0.25rem;
+  }
+
+  .chat-list-item__cover {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    border-radius: 10px;
+  }
+
+  .chat-list-item__content h3 {
+    font-size: 0.9rem;
+  }
+
+  .chat-list-item__content p,
+  .chat-list-item__meta {
+    font-size: 0.82rem;
+  }
+}
 </style>
