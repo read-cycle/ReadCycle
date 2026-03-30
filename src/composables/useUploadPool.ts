@@ -5,6 +5,9 @@ import {
   onSnapshot,
   orderBy,
   query,
+  startAfter,
+  type DocumentData,
+  type QueryDocumentSnapshot,
   type Query,
   type Unsubscribe
 } from 'firebase/firestore';
@@ -40,6 +43,25 @@ function createUploadPoolQuery(maxItems?: number): Query {
 export async function fetchUploadPoolDocs(maxItems?: number) {
   const snapshot = await getDocs(createUploadPoolQuery(maxItems));
   return mapQuerySnapshot<UploadDoc>(snapshot, normalizeUploadDoc);
+}
+
+export async function fetchUploadPoolPage(
+  pageSize = 20,
+  cursor?: QueryDocumentSnapshot<DocumentData> | null
+) {
+  const constraints = [orderBy('timestamp', 'desc')];
+
+  if (cursor) constraints.push(startAfter(cursor));
+
+  constraints.push(limit(pageSize));
+
+  const snapshot = await getDocs(query(collection(db, 'uploadPool'), ...constraints));
+
+  return {
+    docs: mapQuerySnapshot<UploadDoc>(snapshot, normalizeUploadDoc),
+    cursor: snapshot.docs.at(-1) ?? null,
+    hasMore: snapshot.docs.length === pageSize
+  };
 }
 
 export function subscribeToUploadPool(

@@ -8,18 +8,23 @@ import { sendEmail } from '../sendEmail';
 import { useForm } from './useForm';
 import type { FirestoreRecord } from './firestore';
 import { useAuthGuard } from './useAuthGuard';
-import { fetchUploadPoolDocs } from './useUploadPool';
+import { fetchUploadPoolPage } from './useUploadPool';
 import { useRequestNotifications } from './useRequestNotifications';
 
 export function useBrowserPage() {
+  const PAGE_SIZE = 20;
   const { user, authReady } = useAuthGuard();
   const toast = useToast();
   const loading = ref(true);
+  const loadingMore = ref(false);
+  const hasMore = ref(true);
   const submitLoading = ref(false);
   const searchQuery = ref('');
   const docsData = ref<FirestoreRecord<UploadDoc>[]>([]);
   const selectedDoc = ref<FirestoreRecord<UploadDoc> | null>(null);
   const requestForm = useForm();
+  const lastCursor = ref<Awaited<ReturnType<typeof fetchUploadPoolPage>>['cursor']>(null);
+  let activeSearchRequest = 0;
 
   const notifications = useRequestNotifications();
 
@@ -39,10 +44,44 @@ export function useBrowserPage() {
     if (!user.value) return;
 
     loading.value = true;
+    loadingMore.value = false;
+    hasMore.value = true;
+    lastCursor.value = null;
     requestForm.setField('name', user.value.displayName || '');
 
-    docsData.value = await fetchUploadPoolDocs();
-    loading.value = false;
+    try {
+      const page = await fetchUploadPoolPage(PAGE_SIZE);
+      docsData.value = page.docs;
+      lastCursor.value = page.cursor;
+      hasMore.value = page.hasMore;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function loadMoreBooks() {
+    if (!user.value || loading.value || loadingMore.value || !hasMore.value) return;
+
+    loadingMore.value = true;
+    try {
+      const page = await fetchUploadPoolPage(PAGE_SIZE, lastCursor.value);
+      docsData.value = [...docsData.value, ...page.docs];
+      lastCursor.value = page.cursor;
+      hasMore.value = page.hasMore;
+    } finally {
+      loadingMore.value = false;
+    }
+  }
+
+  async function loadAllBooksForSearch() {
+    const queryValue = searchQuery.value.trim();
+    if (!queryValue || !hasMore.value || loading.value || loadingMore.value) return;
+
+    const requestId = ++activeSearchRequest;
+
+    while (requestId === activeSearchRequest && searchQuery.value.trim() && hasMore.value) {
+      await loadMoreBooks();
+    }
   }
 
   watch(
@@ -51,6 +90,8 @@ export function useBrowserPage() {
       if (!nextUser) {
         docsData.value = [];
         selectedDoc.value = null;
+        hasMore.value = true;
+        lastCursor.value = null;
         loading.value = authReady.value ? false : loading.value;
         return;
       }
@@ -59,6 +100,10 @@ export function useBrowserPage() {
     },
     { immediate: true }
   );
+
+  watch(searchQuery, () => {
+    void loadAllBooksForSearch();
+  });
 
   watch(
     selectedDoc,
@@ -145,12 +190,15 @@ export function useBrowserPage() {
 
   return {
     loading,
+    loadingMore,
+    hasMore,
     submitLoading,
     searchQuery,
     filteredDocs,
     selectedDoc,
     requestForm,
     notifications,
+    loadMoreBooks,
     selectDoc,
     closeSelectedDoc,
     submitRequest

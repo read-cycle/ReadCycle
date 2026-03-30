@@ -8,7 +8,7 @@ import BrowserRequestModal from './BrowserRequestModal.vue';
 import BrowserResults from './BrowserResults.vue';
 import BrowserToolbar from './BrowserToolbar.vue';
 
-const { loading, submitLoading, searchQuery, filteredDocs, selectedDoc, requestForm, notifications, selectDoc, closeSelectedDoc, submitRequest } = useBrowserPage();
+const { loading, loadingMore, hasMore, submitLoading, searchQuery, filteredDocs, selectedDoc, requestForm, notifications, loadMoreBooks, selectDoc, closeSelectedDoc, submitRequest } = useBrowserPage();
 </script>
 
 <template>
@@ -17,7 +17,7 @@ const { loading, submitLoading, searchQuery, filteredDocs, selectedDoc, requestF
   <main class="browser-page">
     <MetaBar title="Browse" @notif-click="notifications.openNotification" />
     <BrowserToolbar v-model="searchQuery" />
-    <BrowserResults :loading="loading" :docs="filteredDocs" @select="selectDoc" />
+    <BrowserResults :loading="loading" :loading-more="loadingMore" :has-more="hasMore" :docs="filteredDocs" @load-more="loadMoreBooks" @select="selectDoc" />
   </main>
 
   <BrowserRequestModal :open="Boolean(selectedDoc)" :item="selectedDoc" :request-form="requestForm" :submit-loading="submitLoading" @close="closeSelectedDoc" @submit="submitRequest" />
