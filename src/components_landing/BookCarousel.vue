@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import type { FirestoreRecord } from '../composables/firestore'
 import { subscribeToUploadPool } from '../composables/useUploadPool'
 import type { UploadDoc } from '../interfaces'
 
 const carouselRef = ref<HTMLElement | null>(null)
 const isHovered = ref(false)
+const isDragging = ref(false)
 const loading = ref(true)
 const loadError = ref(false)
 const books = ref<FirestoreRecord<UploadDoc>[]>([])
@@ -16,9 +17,14 @@ const duplicatedBooks = computed(() => (
     ? [...visibleBooks.value, ...visibleBooks.value]
     : visibleBooks.value
 ))
+const DRAG_SENSITIVITY = 0.7
 
 let scrollInterval: number | null = null
+let resumeTimeout: number | null = null
 let unsubscribe: (() => void) | null = null
+let activePointerId: number | null = null
+let dragStartX = 0
+let dragStartScrollLeft = 0
 
 function getBookSubtitle(book: UploadDoc) {
   return [book.grade, book.subject].filter(Boolean).join(' • ') || 'Available now'
@@ -36,27 +42,25 @@ function getLoopWidth() {
   return carousel.scrollWidth / 2
 }
 
-function normalizeScroll(direction: 1 | -1 = 1) {
+function normalizeScroll() {
   const carousel = carouselRef.value
   if (!carousel) return
 
   const loopWidth = getLoopWidth()
   if (!loopWidth) return
 
-  if (direction === 1 && carousel.scrollLeft >= loopWidth) {
-    carousel.scrollLeft -= loopWidth
-  }
-
-  if (direction === -1 && carousel.scrollLeft <= 0) {
+  if (carousel.scrollLeft < loopWidth * 0.5) {
     carousel.scrollLeft += loopWidth
+  } else if (carousel.scrollLeft >= loopWidth * 1.5) {
+    carousel.scrollLeft -= loopWidth
   }
 }
 
 function stepAutoScroll() {
   const carousel = carouselRef.value
-  if (!carousel || isHovered.value || !hasScrollableCarousel.value) return
+  if (!carousel || isHovered.value || isDragging.value || !hasScrollableCarousel.value) return
 
-  normalizeScroll(1)
+  normalizeScroll()
   carousel.scrollLeft += 1
 }
 
@@ -71,28 +75,105 @@ function stopAutoScroll() {
   scrollInterval = null
 }
 
+function clearResumeTimeout() {
+  if (resumeTimeout === null) return
+  window.clearTimeout(resumeTimeout)
+  resumeTimeout = null
+}
+
+function scheduleAutoScrollResume(delay = 900) {
+  clearResumeTimeout()
+  resumeTimeout = window.setTimeout(() => {
+    isHovered.value = false
+    startAutoScroll()
+  }, delay)
+}
+
 function pauseScroll() {
   isHovered.value = true
+  clearResumeTimeout()
+  stopAutoScroll()
 }
 
 function resumeScroll() {
-  isHovered.value = false
+  if (isDragging.value) return
+  scheduleAutoScrollResume(250)
+}
+
+function recenterCarousel() {
+  const carousel = carouselRef.value
+  const loopWidth = getLoopWidth()
+  if (!carousel || !loopWidth) return
+  carousel.scrollLeft = loopWidth
+}
+
+function getCardStep() {
+  const carousel = carouselRef.value
+  if (!carousel) return 300
+
+  const card = carousel.querySelector<HTMLElement>('.book-card')
+  if (!card) return Math.max(carousel.clientWidth * 0.82, 280)
+
+  const cardStyles = window.getComputedStyle(card)
+  const gap = Number.parseFloat(cardStyles.marginRight) || 0
+  const trackStyles = window.getComputedStyle(carousel)
+  const columnGap = Number.parseFloat(trackStyles.columnGap || trackStyles.gap) || 0
+
+  return card.getBoundingClientRect().width + gap + columnGap
 }
 
 function scrollByCard(direction: 1 | -1) {
   const carousel = carouselRef.value
   if (!carousel || !hasScrollableCarousel.value) return
 
-  normalizeScroll(direction)
+  pauseScroll()
+  normalizeScroll()
 
-  const card = carousel.querySelector<HTMLElement>('.book-card')
-  const gap = 20
-  const amount = (card?.offsetWidth ?? 280) + gap
-
-  carousel.scrollBy({
-    left: amount * direction,
+  carousel.scrollTo({
+    left: carousel.scrollLeft + getCardStep() * direction,
     behavior: 'smooth'
   })
+
+  window.setTimeout(() => {
+    normalizeScroll()
+  }, 360)
+
+  scheduleAutoScrollResume(1600)
+}
+
+function handlePointerDown(event: PointerEvent) {
+  const carousel = carouselRef.value
+  if (!carousel || !hasScrollableCarousel.value) return
+  if (event.pointerType === 'mouse' && event.button !== 0) return
+
+  activePointerId = event.pointerId
+  dragStartX = event.clientX
+  dragStartScrollLeft = carousel.scrollLeft
+  isDragging.value = true
+  pauseScroll()
+
+  carousel.setPointerCapture(event.pointerId)
+}
+
+function handlePointerMove(event: PointerEvent) {
+  const carousel = carouselRef.value
+  if (!carousel || activePointerId !== event.pointerId || !isDragging.value) return
+
+  const previousScrollLeft = carousel.scrollLeft
+  const deltaX = (event.clientX - dragStartX) * DRAG_SENSITIVITY
+
+  carousel.scrollLeft = dragStartScrollLeft - deltaX
+  normalizeScroll()
+  dragStartScrollLeft += carousel.scrollLeft - previousScrollLeft
+}
+
+function handlePointerUp(event: PointerEvent) {
+  if (activePointerId !== event.pointerId) return
+
+  activePointerId = null
+  isDragging.value = false
+  normalizeScroll()
+  scheduleAutoScrollResume(900)
 }
 
 onMounted(() => {
@@ -101,6 +182,9 @@ onMounted(() => {
       books.value = nextBooks
       loading.value = false
       loadError.value = false
+      nextTick(() => {
+        recenterCarousel()
+      })
     },
     (error) => {
       console.error('Failed to subscribe to uploadPool:', error)
@@ -110,11 +194,15 @@ onMounted(() => {
     8
   )
 
+  nextTick(() => {
+    recenterCarousel()
+  })
   startAutoScroll()
 })
 
 onUnmounted(() => {
   unsubscribe?.()
+  clearResumeTimeout()
   stopAutoScroll()
 })
 </script>
@@ -143,7 +231,15 @@ onUnmounted(() => {
       @mouseenter="pauseScroll"
       @mouseleave="resumeScroll"
     >
-      <div ref="carouselRef" class="carousel-track">
+      <div
+        ref="carouselRef"
+        class="carousel-track"
+        :class="{ 'is-dragging': isDragging }"
+        @pointerdown="handlePointerDown"
+        @pointermove="handlePointerMove"
+        @pointerup="handlePointerUp"
+        @pointercancel="handlePointerUp"
+      >
         <article
           v-for="([docRef, book], index) in duplicatedBooks"
           :key="`${docRef.id}-${index}`"
@@ -321,9 +417,17 @@ onUnmounted(() => {
   padding: 0.5rem 0 1rem;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  cursor: grab;
 
   &::-webkit-scrollbar {
     display: none;
+  }
+
+  &.is-dragging {
+    cursor: grabbing;
+    scroll-behavior: auto;
+    scroll-snap-type: none;
   }
 }
 
@@ -338,6 +442,7 @@ onUnmounted(() => {
   transition:
     transform var(--transition-speed) ease,
     box-shadow var(--transition-speed) ease;
+  user-select: none;
 
   &:hover {
     transform: scale(1.02);
@@ -355,6 +460,8 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .book-cover-fallback {
