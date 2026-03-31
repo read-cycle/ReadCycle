@@ -40,15 +40,127 @@ function inferMetadataFromText(text: string) {
   };
 }
 
-async function fetchOpenLibraryData(isbnCode: string) {
-  const raw = isbnCode.replace(/[-\s]/g, '');
-  if (!ISBN.isValid(raw)) return null;
+type OpenLibraryBook = {
+  title?: string;
+  subtitle?: string;
+  subjects?: Array<{ name?: string; }>;
+};
+
+type GoogleBooksVolume = {
+  volumeInfo?: {
+    title?: string;
+    subtitle?: string;
+    authors?: string[];
+    publisher?: string;
+    publishedDate?: string;
+    description?: string;
+    categories?: string[];
+  };
+};
+
+function normalizeIsbnInput(isbnCode: string) {
+  return isbnCode.replace(/[-\s]/g, '').toUpperCase();
+}
+
+function getIsbnCandidates(isbnCode: string) {
+  const raw = normalizeIsbnInput(isbnCode);
+  if (!ISBN.isValid(raw)) return [];
 
   const parsed = ISBN.parse(raw) as ISBN.ISBN;
-  const isbn13 = parsed.asIsbn13();
+  const candidates = [raw, parsed.asIsbn13(), parsed.asIsbn10()].filter((value): value is string => Boolean(value));
+  return Array.from(new Set(candidates));
+}
+
+async function fetchOpenLibraryData(isbnCode: string) {
+  const candidates = getIsbnCandidates(isbnCode);
+  const isbn13 = candidates.find((candidate) => candidate.length === 13);
+  if (!isbn13) return null;
+
   const response = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn13}&jscmd=data&format=json`);
-  const data = await response.json();
+  const data = await response.json() as Record<string, OpenLibraryBook>;
   return data[`ISBN:${isbn13}`] ?? null;
+}
+
+async function fetchGoogleBooksData(isbnCode: string) {
+  const candidates = getIsbnCandidates(isbnCode);
+  const isbnQuery = candidates.find((candidate) => candidate.length === 13) ?? candidates[0];
+  if (!isbnQuery) return null;
+
+  const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbnQuery}`);
+  const data = await response.json() as { items?: GoogleBooksVolume[]; };
+  return data.items?.[0] ?? null;
+}
+
+function scoreBookData(entry: {
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  subjects?: string[];
+  authors?: string[];
+  publisher?: string;
+  publishedDate?: string;
+}) {
+  return [
+    entry.title,
+    entry.subtitle,
+    entry.description,
+    entry.publisher,
+    entry.publishedDate,
+    ...(entry.subjects ?? []),
+    ...(entry.authors ?? [])
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .length;
+}
+
+function chooseBestExternalBookData(openLibraryData: OpenLibraryBook | null, googleBooksData: GoogleBooksVolume | null) {
+  const googleVolumeInfo = googleBooksData?.volumeInfo;
+
+  const openLibraryScore = openLibraryData
+    ? scoreBookData({
+        title: openLibraryData.title,
+        subtitle: openLibraryData.subtitle,
+        subjects: openLibraryData.subjects?.map((entry) => entry.name || '').filter(Boolean)
+      })
+    : 0;
+
+  const googleBooksScore = googleVolumeInfo
+    ? scoreBookData({
+        title: googleVolumeInfo.title,
+        subtitle: googleVolumeInfo.subtitle,
+        description: googleVolumeInfo.description,
+        subjects: googleVolumeInfo.categories,
+        authors: googleVolumeInfo.authors,
+        publisher: googleVolumeInfo.publisher,
+        publishedDate: googleVolumeInfo.publishedDate
+      })
+    : 0;
+
+  if (googleBooksScore > openLibraryScore) {
+    return {
+      title: googleVolumeInfo?.title ?? '',
+      metadataSource: [
+        googleVolumeInfo?.title,
+        googleVolumeInfo?.subtitle,
+        googleVolumeInfo?.description,
+        ...(googleVolumeInfo?.categories ?? [])
+      ]
+        .filter(Boolean)
+        .join(' ')
+    };
+  }
+
+  return {
+    title: openLibraryData?.title ?? '',
+    metadataSource: [
+      openLibraryData?.title,
+      openLibraryData?.subtitle,
+      ...(openLibraryData?.subjects?.map((entry) => entry.name || '') ?? [])
+    ]
+      .filter(Boolean)
+      .join(' ')
+  };
 }
 
 export function useForm() {
@@ -62,7 +174,7 @@ export function useForm() {
   const errors = ref<Record<string, string>>({});
   const status = ref<SubmissionStatus>('idle');
   const isbnLookupLoading = ref(false);
-  const autoFilled = ref<{ grade: boolean; subject: boolean }>({ grade: false, subject: false });
+  const autoFilled = ref<{ title: boolean; grade: boolean; subject: boolean }>({ title: false, grade: false, subject: false });
 
   const isbnOptions = Object.keys(isbnToTitle);
   const titleOptions = Object.keys(titleToIsbn);
@@ -83,14 +195,17 @@ export function useForm() {
   ];
   const subjectOptions = Array.from(new Set(Object.values(isbnToSubject)));
   const isbnValidity = computed<null | boolean>(() => {
-    const raw = isbn.value.replace(/[-\s]/g, '');
+    const raw = normalizeIsbnInput(isbn.value);
     if (!raw) return null;
     return ISBN.isValid(raw);
   });
 
   function setField(field: 'isbn' | 'title' | 'grade' | 'subject' | 'name', value: string, manual = true) {
     if (field === 'isbn') isbn.value = value;
-    if (field === 'title') title.value = value;
+    if (field === 'title') {
+      title.value = value;
+      if (manual) autoFilled.value.title = false;
+    }
     if (field === 'grade') {
       grade.value = value;
       if (manual) autoFilled.value.grade = false;
@@ -102,51 +217,70 @@ export function useForm() {
     if (field === 'name') name.value = value;
   }
 
-  function dismissAutofill(field: 'grade' | 'subject') {
+  function dismissAutofill(field: 'title' | 'grade' | 'subject') {
     autoFilled.value[field] = false;
   }
 
-  function applyAutofill(inference: { grade: MetadataValue; subject: MetadataValue }) {
-    if (inference.grade && !grade.value) {
-      grade.value = inference.grade;
+  function applyAutoFilledValue(field: 'title' | 'grade' | 'subject', nextValue: MetadataValue) {
+    if (!nextValue) return;
+
+    if (field === 'title') {
+      title.value = nextValue;
+      autoFilled.value.title = true;
+    }
+    if (field === 'grade') {
+      grade.value = nextValue;
       autoFilled.value.grade = true;
     }
-    if (inference.subject && !subject.value) {
-      subject.value = inference.subject;
+    if (field === 'subject') {
+      subject.value = nextValue;
       autoFilled.value.subject = true;
     }
+  }
+
+  function applyAutofill(inference: { title?: MetadataValue; grade: MetadataValue; subject: MetadataValue }) {
+    applyAutoFilledValue('title', inference.title ?? null);
+    applyAutoFilledValue('grade', inference.grade);
+    applyAutoFilledValue('subject', inference.subject);
   }
 
   async function runIsbnLookup() {
     if (!isbn.value) return;
 
-    if (isbnToTitle[isbn.value]) {
-      title.value ||= isbnToTitle[isbn.value];
-    }
+    const normalizedIsbn = normalizeIsbnInput(isbn.value);
+    if (!normalizedIsbn) return;
 
-    const mappedSubject = isbnToSubject[isbn.value];
-    const mappedGrade = isbnToGrade[isbn.value];
+    isbn.value = normalizedIsbn;
+
+    const candidates = getIsbnCandidates(normalizedIsbn);
+    const mappedTitle = candidates.map((candidate) => isbnToTitle[candidate]).find(Boolean);
+    const mappedSubject = candidates.map((candidate) => isbnToSubject[candidate]).find(Boolean);
+    const mappedGrade = candidates.map((candidate) => isbnToGrade[candidate]).find(Boolean);
+
     applyAutofill({
+      title: mappedTitle ?? null,
       grade: mappedGrade ? formatGradeName(mappedGrade) : null,
       subject: mappedSubject ?? null
     });
 
+    if (mappedTitle || mappedSubject || mappedGrade) {
+      return;
+    }
+
     isbnLookupLoading.value = true;
     try {
-      const openLibraryData = await fetchOpenLibraryData(isbn.value);
-      if (!openLibraryData) return;
+      const [openLibraryData, googleBooksData] = await Promise.all([
+        fetchOpenLibraryData(normalizedIsbn),
+        fetchGoogleBooksData(normalizedIsbn)
+      ]);
+      const bestBookData = chooseBestExternalBookData(openLibraryData, googleBooksData);
+      if (!bestBookData.metadataSource) return;
 
-      title.value ||= openLibraryData.title ?? '';
       applyAutofill(
-        inferMetadataFromText(
-          [
-            openLibraryData.title,
-            openLibraryData.subtitle,
-            ...(openLibraryData.subjects?.map((entry: { name?: string; }) => entry.name || '') ?? [])
-          ]
-            .filter(Boolean)
-            .join(' ')
-        )
+        {
+          title: bestBookData.title,
+          ...inferMetadataFromText(bestBookData.metadataSource)
+        }
       );
     } catch (error) {
       console.error('ISBN lookup failed:', error);
@@ -167,6 +301,7 @@ export function useForm() {
     const mappedGrade = titleToGrade[titleValue];
 
     applyAutofill({
+      title: null,
       grade: mappedGrade ? formatGradeName(mappedGrade) : inferMetadataFromText(titleValue).grade,
       subject: mappedSubject ?? inferMetadataFromText(titleValue).subject
     });
@@ -183,8 +318,6 @@ export function useForm() {
     if (requiredFields.includes('isbn') && !isbn.value.trim()) nextErrors.isbn = 'ISBN is required.';
     if (requiredFields.includes('isbn') && isbn.value.trim() && isbnValidity.value === false) nextErrors.isbn = 'ISBN must be valid.';
     if (requiredFields.includes('title') && !title.value.trim()) nextErrors.title = 'Title is required.';
-    if (requiredFields.includes('grade') && !grade.value.trim()) nextErrors.grade = 'Grade is required.';
-    if (requiredFields.includes('subject') && !subject.value.trim()) nextErrors.subject = 'Subject is required.';
     if (requiredFields.includes('name') && !name.value.trim()) nextErrors.name = 'Name is required.';
     if (requiredFields.includes('quantity') && (!quantity.value || quantity.value < 1)) nextErrors.quantity = 'Quantity must be at least 1.';
 
@@ -210,7 +343,7 @@ export function useForm() {
     name.value = defaults?.name ?? '';
     errors.value = {};
     status.value = 'idle';
-    autoFilled.value = { grade: false, subject: false };
+    autoFilled.value = { title: false, grade: false, subject: false };
   }
 
   const payload = computed(() => ({

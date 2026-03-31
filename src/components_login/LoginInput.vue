@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, defineEmits } from 'vue';
+import { ref, computed } from 'vue';
 import { X, Eye, EyeClosed, type LucideIcon } from 'lucide-vue-next';
 
 const emit = defineEmits<{
@@ -19,6 +19,10 @@ const passwordHidden = ref(true);
 const inputRef = ref<HTMLInputElement | null>(null);
 
 const isPassword = computed(() => props.fieldType === 'password');
+const inputValue = computed({
+  get: () => props.modelValue,
+  set: (value: string) => emit('update:modelValue', value)
+});
 
 const inputType = computed(() => {
   if (isPassword.value) return 'password';
@@ -35,16 +39,8 @@ function clearInput() {
 function handleEnterKey() {
   emit('submit');
 }
-
-const input_pwd = ref();
 </script>
 <template>
-  <input
-    id="invisible-sync-pwd"
-    v-show="false"
-    v-model="input_pwd"
-    :type="passwordHidden ? 'text' : 'password'"
-  >
   <div>
     <fieldset class="input-box-container">
       <legend>{{ fieldName }}</legend>
@@ -59,10 +55,8 @@ const input_pwd = ref();
         class="input-box"
         :placeholder="placeholder"
         :style="[{ marginRight: isPassword ? '25%' : '15%' }]"
-        v-model="input_pwd"
-        :value="modelValue"
+        v-model="inputValue"
         autocomplete="on"
-        @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
         @keydown.enter.prevent="handleEnterKey"
       />
 

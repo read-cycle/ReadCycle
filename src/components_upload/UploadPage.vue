@@ -17,7 +17,6 @@ const { form, listingImage, extraImages, notifications, handleListingImage, hand
   <Navbar class="upload-navbar" />
   <main class="upload-page">
     <MetaBar title="Upload" @notif-click="notifications.openNotification" />
-
     <form class="upload-form" @submit.prevent="submitUpload">
       <UploadBookDetailsSection :form="form" />
       <UploadListingDetailsSection :form="form" />

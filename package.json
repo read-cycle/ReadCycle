@@ -10,6 +10,8 @@
     "mobile:check": "node scripts/mobile-compat-check.mjs"
   },
   "dependencies": {
+    "@ericblade/quagga2": "^1.12.1",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vueform/multiselect": "^2.6.11",
     "cors": "^2.8.5",
     "firebase": "^12.6.0",
@@ -17,6 +19,7 @@
     "fontkit": "^2.0.4",
     "isbn-utils": "^1.1.0",
     "lucide-vue-next": "^0.555.0",
+    "quagga2-vue3": "^1.0.1",
     "vue": "^3.5.17",
     "vue-cal": "^4.10.2",
     "vue-multiselect": "^3.4.0",

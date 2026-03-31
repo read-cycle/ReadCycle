@@ -26,7 +26,10 @@ defineEmits<{
         <section class="watchlist-form__section">
           <h3>Book details</h3>
           <label>
-            ISBN
+            <span class="field-label">
+              ISBN
+              <span class="field-help" tabindex="0" data-tooltip="Scan the barcode on the back of the book. ISBN means International Standard Book Number, usually a 10 or 13 digit book ID.">?</span>
+            </span>
             <input
               v-model="form.isbn.value"
               list="dashboard-isbn-options"
@@ -51,22 +54,31 @@ defineEmits<{
             <option v-for="option in form.isbnOptions" :key="option" :value="option" />
           </datalist>
           <label>
-            Title
-            <input v-model="form.title.value" list="dashboard-title-options" @blur="form.inferFromTitle" />
+            <span class="field-label">
+              Title
+              <span class="field-help" tabindex="0" data-tooltip="Enter the book title shown on the cover. Scanning a valid ISBN will usually fill this automatically.">?</span>
+            </span>
+            <input v-model="form.title.value" list="dashboard-title-options" @input="form.dismissAutofill('title')" @blur="form.inferFromTitle" />
           </label>
           <datalist id="dashboard-title-options">
             <option v-for="option in form.titleOptions" :key="option" :value="option" />
           </datalist>
           <label>
-            Grade
-            <input v-model="form.grade.value" list="dashboard-grade-options" />
+            <span class="field-label">
+              Grade
+              <span class="field-help" tabindex="0" data-tooltip="Optional. Use this for the school grade or level the book is intended for, such as Grade 6 or Bridge Program.">?</span>
+            </span>
+            <input v-model="form.grade.value" list="dashboard-grade-options" @input="form.dismissAutofill('grade')" />
           </label>
           <datalist id="dashboard-grade-options">
             <option v-for="option in form.gradeOptions" :key="option" :value="option" />
           </datalist>
           <label>
-            Subject
-            <input v-model="form.subject.value" list="dashboard-subject-options" />
+            <span class="field-label">
+              Subject
+              <span class="field-help" tabindex="0" data-tooltip="Optional. This is the subject area of the book, such as English, Mathematics, or Biology.">?</span>
+            </span>
+            <input v-model="form.subject.value" list="dashboard-subject-options" @input="form.dismissAutofill('subject')" />
           </label>
           <datalist id="dashboard-subject-options">
             <option v-for="option in form.subjectOptions" :key="option" :value="option" />
@@ -163,6 +175,56 @@ defineEmits<{
   font-size: clamp(0.95rem, 1.5vw, 1rem);
 }
 
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.field-help {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  color: $color-text;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: help;
+}
+
+.field-help::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.55rem);
+  transform: translateX(-50%);
+  width: min(18rem, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: #0f172a;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.35;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.22);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+  z-index: 10;
+}
+
+.field-help:hover::after,
+.field-help:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+}
+
 .watchlist-form__section input {
   width: 100%;
   border: 1px solid rgba(15, 23, 42, 0.12);
@@ -204,6 +266,14 @@ defineEmits<{
 
   :deep(.loading-button) {
     width: 100%;
+  }
+
+  .field-help::after {
+    left: 0;
+    right: auto;
+    transform: none;
+    width: min(16rem, calc(100vw - 1.5rem));
+    max-width: calc(100vw - 1.5rem);
   }
 }
 </style>
