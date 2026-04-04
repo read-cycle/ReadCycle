@@ -1,15 +1,20 @@
-import { addDoc, collection, deleteDoc, getDocs, orderBy, query, serverTimestamp, where } from 'firebase/firestore';
+import { deleteDoc, orderBy, where } from 'firebase/firestore';
 import { computed, ref, watch } from 'vue';
 import { useToast } from 'vue-toastification';
-import { db } from '../firebase-init';
 import { createRequestAcceptedEmail } from '../emailTemplates';
 import type { BuyerRequestedDoc, UploadDoc, WatchlistDoc } from '../interfaces';
 import { normalizeMetadataValue } from '../interfaces';
+import { uploadPoolDoc, watchlistDoc } from '../repositories/firestoreRefs';
+import { createBookMatchedEvent } from '../repositories/statsRepo';
+import { fetchUploadPoolByUploader } from '../repositories/uploadPoolRepo';
+import { createWatchlistEntry, fetchWatchlistByBuyer } from '../repositories/watchlistRepo';
 import { sendEmail } from '../sendEmail';
+import { normalizeImageUrl, normalizeImageUrlList } from '../utils/imageUrls';
+import { fetchHydratedBuyerRequestedRecords, moveRequestToMatched } from './buyerRequests';
 import { mapQuerySnapshot, type FirestoreRecord } from './firestore';
 import { useAuthGuard } from './useAuthGuard';
 import { useForm } from './useForm';
-import { moveRequestToMatched, useRequestNotifications } from './useRequestNotifications';
+import { useRequestNotifications } from './useRequestNotifications';
 
 
 export function useDashboardPage() {
@@ -23,29 +28,6 @@ export function useDashboardPage() {
   const watchlistLoading = ref(false);
   const watchlistForm = useForm();
 
-  function normalizeBuyerRequestedDoc(data: Record<string, unknown> & { id: string }): BuyerRequestedDoc {
-    return {
-      id: data.id,
-      buyerName: typeof data.buyerName === 'string' ? data.buyerName : '',
-      buyerQuantity: typeof data.buyerQuantity === 'number' ? data.buyerQuantity : 0,
-      isbn: normalizeMetadataValue(data.isbn),
-      title: normalizeMetadataValue(data.title),
-      grade: normalizeMetadataValue(data.grade),
-      subject: normalizeMetadataValue(data.subject),
-      price: typeof data.price === 'number' ? data.price : 0,
-      quantity: typeof data.quantity === 'number' ? data.quantity : 0,
-      uploaderName: typeof data.uploaderName === 'string' ? data.uploaderName : '',
-      listingImage: typeof data.listingImage === 'string' ? data.listingImage : '',
-      extraImages: Array.isArray(data.extraImages) ? data.extraImages.filter((entry): entry is string => typeof entry === 'string') : [],
-      timestamp: data.timestamp as BuyerRequestedDoc['timestamp'],
-      uploaderEmail: typeof data.uploaderEmail === 'string' ? data.uploaderEmail : '',
-      buyerEmail: typeof data.buyerEmail === 'string' ? data.buyerEmail : '',
-      uploaderID: typeof data.uploaderID === 'string' ? data.uploaderID : '',
-      buyerID: typeof data.buyerID === 'string' ? data.buyerID : '',
-      listingDoc: data.listingDoc as BuyerRequestedDoc['listingDoc']
-    };
-  }
-
   function normalizeUploadDoc(data: Record<string, unknown> & { id: string }): UploadDoc {
     return {
       id: data.id,
@@ -56,8 +38,10 @@ export function useDashboardPage() {
       price: typeof data.price === 'number' ? data.price : 0,
       quantity: typeof data.quantity === 'number' ? data.quantity : 0,
       uploaderName: typeof data.uploaderName === 'string' ? data.uploaderName : '',
-      listingImage: typeof data.listingImage === 'string' ? data.listingImage : '',
-      extraImages: Array.isArray(data.extraImages) ? data.extraImages.filter((entry): entry is string => typeof entry === 'string') : [],
+      listingImage: normalizeImageUrl(data.listingImage),
+      listingImageThumb: normalizeImageUrl(data.listingImageThumb),
+      extraImages: normalizeImageUrlList(data.extraImages),
+      extraImageThumbs: normalizeImageUrlList(data.extraImageThumbs),
       timestamp: data.timestamp as UploadDoc['timestamp'],
       uploaderEmail: typeof data.uploaderEmail === 'string' ? data.uploaderEmail : '',
       uploaderID: typeof data.uploaderID === 'string' ? data.uploaderID : ''
@@ -84,12 +68,12 @@ export function useDashboardPage() {
 
     dashboardLoading.value = true;
     const [pendingResult, watchResult, uploadResult] = await Promise.all([
-      getDocs(query(collection(db, 'buyerRequested'), where('uploaderID', '==', user.value.uid), orderBy('timestamp', 'desc'))),
-      getDocs(query(collection(db, 'watchlist'), where('buyerID', '==', user.value.uid), orderBy('timestamp', 'desc'))),
-      getDocs(query(collection(db, 'uploadPool'), where('uploaderID', '==', user.value.uid), orderBy('timestamp', 'desc')))
+      fetchHydratedBuyerRequestedRecords(where('uploaderID', '==', user.value.uid), orderBy('timestamp', 'desc')),
+      fetchWatchlistByBuyer(user.value.uid),
+      fetchUploadPoolByUploader(user.value.uid)
     ]);
 
-    pendingData.value = mapQuerySnapshot<BuyerRequestedDoc>(pendingResult, normalizeBuyerRequestedDoc);
+    pendingData.value = pendingResult;
     watchData.value = mapQuerySnapshot<WatchlistDoc>(watchResult, normalizeWatchlistDoc);
     uploadData.value = mapQuerySnapshot<UploadDoc>(uploadResult, normalizeUploadDoc);
     dashboardLoading.value = false;
@@ -117,15 +101,13 @@ export function useDashboardPage() {
     onDenied: loadDashboardData
   });
 
-  async function acceptPendingRequest([docRef, data]: FirestoreRecord<BuyerRequestedDoc>) {
-    await addDoc(collection(db, 'stats_events'), {
-      eventType: 'book_matched',
-      listingId: docRef.id,
+  async function acceptPendingRequest(data: BuyerRequestedDoc) {
+    await createBookMatchedEvent({
+      listingId: data.listingId,
       uploaderID: data.uploaderID ?? null,
       buyerID: data.buyerID ?? null,
       subject: data.subject,
-      isbn: data.isbn,
-      timestamp: serverTimestamp()
+      isbn: data.isbn
     });
 
     sendEmail(
@@ -147,11 +129,24 @@ export function useDashboardPage() {
     notifications.notificationLoading.value = true;
     try {
       const item = notifications.activeNotification.value;
-      await acceptPendingRequest(item);
       await moveRequestToMatched(item);
+      await acceptPendingRequest(item[1]);
       notifications.closeNotification();
       await loadDashboardData();
       toast.success('Request accepted. A chat has been created.');
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        (
+          error.message.includes('were cleared') ||
+          error.message.includes('no longer exists') ||
+          error.message.includes('is invalid')
+        )
+      ) {
+        notifications.closeNotification();
+        await loadDashboardData();
+      }
+      toast.error(error instanceof Error ? error.message : 'Failed to accept request.');
     } finally {
       notifications.notificationLoading.value = false;
     }
@@ -164,7 +159,7 @@ export function useDashboardPage() {
     watchlistLoading.value = true;
     watchlistForm.status.value = 'loading';
     try {
-      await addDoc(collection(db, 'watchlist'), {
+      await createWatchlistEntry({
         buyerName: watchlistForm.payload.value.name,
         buyerQuantity: watchlistForm.payload.value.quantity,
         buyerID: user.value.uid,
@@ -172,9 +167,8 @@ export function useDashboardPage() {
         subject: watchlistForm.payload.value.subject,
         isbn: watchlistForm.payload.value.isbn,
         grade: watchlistForm.payload.value.grade,
-        timestamp: serverTimestamp(),
         buyerEmail: user.value.email
-      } satisfies Omit<WatchlistDoc, 'id' | 'timestamp'> & { timestamp: ReturnType<typeof serverTimestamp> });
+      });
       watchlistForm.status.value = 'success';
       watchlistModalOpen.value = false;
       watchlistForm.reset({
@@ -184,7 +178,6 @@ export function useDashboardPage() {
       await loadDashboardData();
       toast.success('Saved to watchlist.');
     } catch (error) {
-      console.error('Failed to add watchlist item:', error);
       watchlistForm.status.value = 'error';
       toast.error('Failed to save watchlist item.');
     } finally {
@@ -192,15 +185,15 @@ export function useDashboardPage() {
     }
   }
 
-  async function removeUpload(docRef: FirestoreRecord<UploadDoc>[0]) {
-    await deleteDoc(docRef);
-    uploadData.value = uploadData.value.filter(([entryRef]) => entryRef.id !== docRef.id);
+  async function removeUpload(docId: FirestoreRecord<UploadDoc>[0]) {
+    await deleteDoc(uploadPoolDoc(docId));
+    uploadData.value = uploadData.value.filter(([entryId]) => entryId !== docId);
     toast.info('Upload removed.');
   }
 
-  async function removeWatchlistItem(docRef: FirestoreRecord<WatchlistDoc>[0]) {
-    await deleteDoc(docRef);
-    watchData.value = watchData.value.filter(([entryRef]) => entryRef.id !== docRef.id);
+  async function removeWatchlistItem(docId: FirestoreRecord<WatchlistDoc>[0]) {
+    await deleteDoc(watchlistDoc(docId));
+    watchData.value = watchData.value.filter(([entryId]) => entryId !== docId);
     toast.info('Watchlist item removed.');
   }
 

@@ -1,6 +1,12 @@
+import { runtimeConfig } from './config/runtime';
+
 export async function sendEmail(email: string, subject: string, body: string) {
+  if (!runtimeConfig.email.enabled || !runtimeConfig.email.endpoint) {
+    return { skipped: true };
+  }
+
   const res = await fetch(
-    "https://sendemail-i6sbso7noa-uc.a.run.app",
+    runtimeConfig.email.endpoint,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -9,6 +15,5 @@ export async function sendEmail(email: string, subject: string, body: string) {
   );
 
   const data = await res.json();
-  console.log("Email response:", data);
   return data;
 }

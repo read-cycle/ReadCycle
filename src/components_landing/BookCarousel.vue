@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import AppImage from '../components/AppImage.vue'
 import type { FirestoreRecord } from '../composables/firestore'
 import { subscribeToUploadPool } from '../composables/useUploadPool'
 import type { UploadDoc } from '../interfaces'
+import { getDisplayImageUrl } from '../utils/imageUrls'
 
 const carouselRef = ref<HTMLElement | null>(null)
 const isHovered = ref(false)
@@ -48,6 +50,10 @@ function getBookMeta(book: UploadDoc) {
   const parts = [`Qty ${book.quantity ?? 0}`]
   if (book.price > 0) parts.push(`₹${book.price}`)
   return parts.join(' • ')
+}
+
+function getBookImage(book: UploadDoc) {
+  return getDisplayImageUrl(book.listingImageThumb, book.listingImage)
 }
 
 function getLoopWidth() {
@@ -200,8 +206,7 @@ onMounted(() => {
         recenterCarousel()
       })
     },
-    (error) => {
-      console.error('Failed to subscribe to uploadPool:', error)
+    () => {
       loading.value = false
       loadError.value = true
     },
@@ -256,11 +261,11 @@ onUnmounted(() => {
       >
         <article
           v-for="([docRef, book], index) in duplicatedBooks"
-          :key="`${docRef.id}-${index}`"
+          :key="`${docRef}-${index}`"
           class="book-card"
         >
           <div class="book-cover-wrap">
-            <img v-if="book.listingImage" :src="book.listingImage" :alt="`Cover of ${book.title || 'book listing'}`" class="book-cover">
+            <AppImage v-if="book.listingImage" :src="getBookImage(book)" :alt="`Cover of ${book.title || 'book listing'}`" class="book-cover" />
             <div v-else class="book-cover book-cover-fallback" aria-hidden="true">
               <span>{{ (book.title || 'R').slice(0, 1).toUpperCase() }}</span>
             </div>

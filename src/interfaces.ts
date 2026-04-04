@@ -1,4 +1,4 @@
-import type { DocumentReference, Timestamp } from 'firebase/firestore';
+import type { Timestamp } from 'firebase/firestore';
 
 export type MetadataValue = string | null;
 
@@ -12,7 +12,9 @@ export interface UploadDoc {
   quantity: number;
   uploaderName: string;
   listingImage: string;
+  listingImageThumb?: string;
   extraImages: string[];
+  extraImageThumbs?: string[];
   timestamp: Timestamp;
   uploaderEmail: string;
   uploaderID: string;
@@ -30,19 +32,29 @@ export interface BuyerRequestedDoc {
   quantity: number;
   uploaderName: string;
   listingImage: string;
+  listingImageThumb?: string;
   extraImages: string[];
+  extraImageThumbs?: string[];
   timestamp: Timestamp;
   uploaderEmail: string;
   buyerEmail: string;
   uploaderID: string;
   buyerID: string;
-  listingDoc: DocumentReference;
+  listingId: string;
+}
+
+export interface MatchedChatDoc extends BuyerRequestedDoc {
+  lastMessagePreview: string;
+  lastMessageTimestamp?: Timestamp;
+  unreadCountForUploader: number;
+  unreadCountForBuyer: number;
 }
 
 export interface Message {
   text?: string;
   imageUrl?: string;
   imageUrls?: string[];
+  imageThumbUrls?: string[];
   sender: string;
   timestamp: Timestamp;
   type: 'text' | 'image' | 'text+image';

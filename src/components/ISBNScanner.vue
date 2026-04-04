@@ -84,7 +84,6 @@ async function startScanner() {
       isStarting.value = false;
 
       if (error) {
-        console.error('Quagga init failed:', error);
         errorMessage.value = 'Camera access failed. Check browser permissions and try again.';
         showViewport.value = false;
         return;

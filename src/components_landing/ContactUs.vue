@@ -33,7 +33,6 @@ async function handleSubmit() {
     toast.success('Message sent successfully.')
     resetForm()
   } catch (err) {
-    console.error(err)
     toast.error('Failed to send message. Please try again.')
   } finally {
     loading.value = false

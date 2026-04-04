@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AutocompleteInput from '../components/AutocompleteInput.vue';
 import ISBNScanner from '../components/ISBNScanner.vue';
 import LoadingSpinner from '../components/LoadingSpinner.vue';
 import type { useForm } from '../composables/useForm';
@@ -14,6 +15,17 @@ async function handleIsbnDetected(isbn: string) {
   delete props.form.errors.value.isbn;
   await props.form.runIsbnLookup();
 }
+
+async function handleIsbnOptionSelect(isbn: string) {
+  props.form.setField('isbn', isbn);
+  delete props.form.errors.value.isbn;
+  await props.form.runIsbnLookup();
+}
+
+function handleTitleOptionSelect(title: string) {
+  props.form.setField('title', title);
+  props.form.inferFromTitle();
+}
 </script>
 
 <template>
@@ -23,17 +35,26 @@ async function handleIsbnDetected(isbn: string) {
       <label>
         <span class="field-label">
           ISBN
+          <span class="field-indicator field-indicator--optional">Optional</span>
           <span class="field-help" tabindex="0" data-tooltip="Scan the barcode on the back of the book. ISBN means International Standard Book Number, usually a 10 or 13 digit book ID.">?</span>
         </span>
         <div class="isbn-field-row">
-          <input
+          <AutocompleteInput
             v-model="form.isbn.value"
-            list="upload-isbn-options"
+            :options="form.isbnOptions"
+            inputmode="numeric"
+            enterkeyhint="next"
+            spellcheck="false"
+            autocapitalize="off"
+            autocomplete="off"
             :class="{
               'is-valid': form.isbnValidity.value === true,
               'is-invalid': form.isbnValidity.value === false
             }"
+            :valid="form.isbnValidity.value === true"
+            :invalid="form.isbnValidity.value === false"
             @blur="form.runIsbnLookup"
+            @option-select="handleIsbnOptionSelect"
           />
           <ISBNScanner class="isbn-field-row__scanner" @detected="handleIsbnDetected" />
         </div>
@@ -48,20 +69,23 @@ async function handleIsbnDetected(isbn: string) {
           {{ form.isbnValidity.value ? 'Valid ISBN' : 'Invalid ISBN' }}
         </span>
       </label>
-      <datalist id="upload-isbn-options">
-        <option v-for="option in form.isbnOptions" :key="option" :value="option" />
-      </datalist>
 
       <label>
         <span class="field-label">
           Title
+          <span class="field-indicator field-indicator--required">Required</span>
           <span class="field-help" tabindex="0" data-tooltip="Enter the book title shown on the cover. Scanning a valid ISBN will usually fill this automatically.">?</span>
         </span>
-        <input v-model="form.title.value" list="upload-title-options" @input="form.dismissAutofill('title')" @blur="form.inferFromTitle" />
+        <AutocompleteInput
+          v-model="form.title.value"
+          :options="form.titleOptions"
+          enterkeyhint="next"
+          autocomplete="off"
+          @input="form.dismissAutofill('title')"
+          @blur="form.inferFromTitle"
+          @option-select="handleTitleOptionSelect"
+        />
       </label>
-      <datalist id="upload-title-options">
-        <option v-for="option in form.titleOptions" :key="option" :value="option" />
-      </datalist>
 
       <div v-if="form.isbnLookupLoading.value" class="upload-form__lookup">
         <LoadingSpinner />
@@ -71,6 +95,7 @@ async function handleIsbnDetected(isbn: string) {
       <label>
         <span class="field-label">
           Grade
+          <span class="field-indicator field-indicator--optional">Optional</span>
           <span class="field-help" tabindex="0" data-tooltip="Optional. Use this for the school grade or level the book is intended for, such as Grade 6 or Bridge Program.">?</span>
         </span>
         <input v-model="form.grade.value" list="upload-grade-options" @input="form.dismissAutofill('grade')" />
@@ -82,6 +107,7 @@ async function handleIsbnDetected(isbn: string) {
       <label>
         <span class="field-label">
           Subject
+          <span class="field-indicator field-indicator--optional">Optional</span>
           <span class="field-help" tabindex="0" data-tooltip="Optional. This is the subject area of the book, such as English, Mathematics, or Biology.">?</span>
         </span>
         <input v-model="form.subject.value" list="upload-subject-options" @input="form.dismissAutofill('subject')" />
@@ -135,7 +161,28 @@ async function handleIsbnDetected(isbn: string) {
 .field-label {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.4rem;
+}
+
+.field-indicator {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.field-indicator--required {
+  background: rgba(34, 197, 94, 0.14);
+  color: #166534;
+}
+
+.field-indicator--optional {
+  background: rgba(15, 23, 42, 0.08);
+  color: $color-text-secondary;
 }
 
 .field-help {
@@ -189,7 +236,7 @@ async function handleIsbnDetected(isbn: string) {
   gap: 0.75rem;
 }
 
-.isbn-field-row input {
+.isbn-field-row :deep(.autocomplete-input) {
   flex: 1 1 auto;
 }
 

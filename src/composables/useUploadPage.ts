@@ -1,16 +1,20 @@
-import { addDoc, collection, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
-import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import { ref, watch } from 'vue';
 import { useToast } from 'vue-toastification';
-import { db, storage } from '../firebase-init';
 import { createWatchlistMatchEmail } from '../emailTemplates';
 import type { WatchlistDoc } from '../interfaces';
 import { normalizeMetadataValue } from '../interfaces';
+import { createBookUploadedEvent } from '../repositories/statsRepo';
+import { uploadListingExtraImageSet, uploadListingImageSet } from '../repositories/storageRepo';
+import { createUploadPoolDoc, saveUploadPoolDoc } from '../repositories/uploadPoolRepo';
+import { fetchWatchlistByIsbn } from '../repositories/watchlistRepo';
 import { sendEmail } from '../sendEmail';
+import { createListingImageVariants } from '../utils/imageProcessing';
 import { useForm } from './useForm';
 import { mapQuerySnapshot } from './firestore';
 import { useAuthGuard } from './useAuthGuard';
 import { useRequestNotifications } from './useRequestNotifications';
+
+const ISBN_RECOMMENDATION_DISMISSED_KEY = 'readcycle-upload-isbn-recommendation-dismissed';
 
 export function useUploadPage() {
   const { user } = useAuthGuard();
@@ -18,6 +22,9 @@ export function useUploadPage() {
   const form = useForm();
   const listingImage = ref<File | null>(null);
   const extraImages = ref<File[]>([]);
+  const isbnRecommendationOpen = ref(false);
+  const isbnRecommendationLoading = ref(false);
+  const skipIsbnRecommendation = ref(localStorage.getItem(ISBN_RECOMMENDATION_DISMISSED_KEY) === 'true');
 
   const notifications = useRequestNotifications();
 
@@ -57,8 +64,7 @@ export function useUploadPage() {
   async function notifyWatchlistMatches() {
     if (!form.payload.value.isbn) return;
 
-    const watchlistQuery = query(collection(db, 'watchlist'), where('isbn', '==', form.payload.value.isbn));
-    const result = await getDocs(watchlistQuery);
+    const result = await fetchWatchlistByIsbn(form.payload.value.isbn);
     const watchlistData = mapQuerySnapshot<WatchlistDoc>(result, normalizeWatchlistDoc);
 
     watchlistData.forEach(([, item]) => {
@@ -76,17 +82,37 @@ export function useUploadPage() {
     });
   }
 
-  async function submitUpload() {
+  async function performUpload() {
     if (!user.value || !user.value.email) return;
-    if (!form.validate(['isbn', 'title', 'grade', 'subject', 'name', 'quantity']) || !listingImage.value) {
-      form.errors.value.listingImage = 'Listing image is required.';
-      return;
-    }
 
     form.status.value = 'loading';
 
     try {
-      const docRef = await addDoc(collection(db, 'uploadPool'), {
+      const docRef = createUploadPoolDoc();
+
+      const listingImageAssets = await createListingImageVariants(listingImage.value);
+      const { listingImageUrl, listingImageThumbUrl } = await uploadListingImageSet(
+        docRef.id,
+        listingImageAssets.displayFile,
+        listingImageAssets.thumbFile
+      );
+
+      const uploadedExtraImages = await Promise.all(
+        extraImages.value.map(async (file, index) => {
+          const imageAssets = await createListingImageVariants(file);
+          return uploadListingExtraImageSet(
+            docRef.id,
+            index,
+            imageAssets.displayFile,
+            imageAssets.thumbFile
+          );
+        })
+      );
+
+      const extraImageUrls = uploadedExtraImages.map((entry) => entry.imageUrl);
+      const extraImageThumbUrls = uploadedExtraImages.map((entry) => entry.imageThumbUrl);
+
+      await saveUploadPoolDoc(docRef.id, {
         isbn: form.payload.value.isbn,
         title: form.payload.value.title,
         grade: form.payload.value.grade,
@@ -96,34 +122,17 @@ export function useUploadPage() {
         uploaderName: form.payload.value.name,
         uploaderID: user.value.uid,
         uploaderEmail: user.value.email,
-        listingImage: '',
-        extraImages: [],
-        timestamp: serverTimestamp()
-      });
-
-      const listingImageRef = storageRef(storage, `uploadPool/${docRef.id}/listingImage/${listingImage.value.name}`);
-      await uploadBytes(listingImageRef, listingImage.value);
-      const listingImageUrl = await getDownloadURL(listingImageRef);
-
-      const extraImageUrls: string[] = [];
-      for (const file of extraImages.value) {
-        const imageRef = storageRef(storage, `uploadPool/${docRef.id}/extraImages/${file.name}`);
-        await uploadBytes(imageRef, file);
-        extraImageUrls.push(await getDownloadURL(imageRef));
-      }
-
-      await updateDoc(docRef, {
         listingImage: listingImageUrl,
-        extraImages: extraImageUrls
+        listingImageThumb: listingImageThumbUrl,
+        extraImages: extraImageUrls,
+        extraImageThumbs: extraImageThumbUrls
       });
 
-      await addDoc(collection(db, 'stats_events'), {
-        eventType: 'book_uploaded',
+      await createBookUploadedEvent({
         listingId: docRef.id,
         uploaderID: user.value.uid,
         subject: form.payload.value.subject,
-        isbn: form.payload.value.isbn,
-        timestamp: serverTimestamp()
+        isbn: form.payload.value.isbn
       });
 
       await notifyWatchlistMatches();
@@ -137,9 +146,43 @@ export function useUploadPage() {
       form.status.value = 'success';
       toast.success('Upload complete.');
     } catch (error) {
-      console.error('Upload failed:', error);
       form.status.value = 'error';
       toast.error('Upload failed. Try again.');
+    }
+  }
+
+  async function submitUpload() {
+    if (!user.value || !user.value.email) return;
+    if (!form.validate(['title', 'price', 'name', 'quantity']) || !listingImage.value) {
+      form.errors.value.listingImage = 'Listing image is required.';
+      return;
+    }
+
+    if (!form.payload.value.isbn && !skipIsbnRecommendation.value) {
+      isbnRecommendationOpen.value = true;
+      return;
+    }
+
+    await performUpload();
+  }
+
+  function closeIsbnRecommendation() {
+    isbnRecommendationOpen.value = false;
+  }
+
+  async function confirmUploadWithoutIsbn() {
+    if (skipIsbnRecommendation.value) {
+      localStorage.setItem(ISBN_RECOMMENDATION_DISMISSED_KEY, 'true');
+    } else {
+      localStorage.removeItem(ISBN_RECOMMENDATION_DISMISSED_KEY);
+    }
+
+    isbnRecommendationLoading.value = true;
+    isbnRecommendationOpen.value = false;
+    try {
+      await performUpload();
+    } finally {
+      isbnRecommendationLoading.value = false;
     }
   }
 
@@ -147,9 +190,14 @@ export function useUploadPage() {
     form,
     listingImage,
     extraImages,
+    isbnRecommendationOpen,
+    isbnRecommendationLoading,
+    skipIsbnRecommendation,
     notifications,
     handleListingImage,
     handleExtraImages,
+    closeIsbnRecommendation,
+    confirmUploadWithoutIsbn,
     submitUpload
   };
 }

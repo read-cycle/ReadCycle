@@ -1,9 +1,18 @@
 import { computed, ref } from 'vue';
 import ISBN from 'isbn-utils';
 import type { MetadataValue } from '../interfaces';
-import { isbnToGrade, isbnToSubject, isbnToTitle, titleToGrade, titleToIsbn, titleToSubject } from '../assets/BookMappings';
+import { inventureAcademyBookMapping } from '../assets/BookMappings';
 
 type SubmissionStatus = 'idle' | 'loading' | 'success' | 'error';
+
+const {
+  isbnToGrade,
+  isbnToSubject,
+  isbnToTitle,
+  titleToGrade,
+  titleToIsbn,
+  titleToSubject,
+} = inventureAcademyBookMapping;
 
 const SUBJECT_MATCHES = [
   'Mathematics',
@@ -22,11 +31,18 @@ const SUBJECT_MATCHES = [
 const GRADE_REGEX = /\b(?:grade|class|year|standard|std|form)\s*(\d{1,2})\b/i;
 
 function formatGradeName(raw: string) {
-  const value = raw.toLowerCase();
-  if (value === 'bp') return 'Bridge Program';
-  if (/^g\d+$/i.test(value)) return `Grade ${value.slice(1)}`;
-  if (/^\d+$/.test(value)) return `Grade ${value}`;
-  return raw;
+  const trimmed = raw.trim();
+  const lower = trimmed.toLowerCase();
+  const gradeMatch = trimmed.match(/^grade\s+(\d{1,2})$/i);
+  const numericValue = /^\d+$/.test(trimmed) ? trimmed : gradeMatch?.[1] ?? null;
+
+  if (numericValue === '9' || numericValue === '10') return 'Grade 9 & 10 IGCSE';
+  if (numericValue === '11') return 'Grade 11 AS';
+  if (numericValue === '12') return 'Grade 12 AS';
+  if (numericValue) return `Grade ${numericValue}`;
+  if (lower === 'bridge program') return 'Bridge Program';
+
+  return trimmed;
 }
 
 function inferMetadataFromText(text: string) {
@@ -35,7 +51,7 @@ function inferMetadataFromText(text: string) {
   const subjectMatch = SUBJECT_MATCHES.find((subject) => lower.includes(subject.toLowerCase()));
 
   return {
-    grade: gradeMatch ? `Grade ${gradeMatch[1]}` : null,
+    grade: gradeMatch ? formatGradeName(`Grade ${gradeMatch[1]}`) : null,
     subject: subjectMatch ?? null
   };
 }
@@ -187,8 +203,7 @@ export function useForm() {
     'Grade 6',
     'Grade 7',
     'Grade 8',
-    'Grade 9',
-    'Grade 10',
+    'Grade 9 & 10 IGCSE',
     'Grade 11 AS',
     'Grade 12 AS',
     'Bridge Program'
@@ -283,7 +298,6 @@ export function useForm() {
         }
       );
     } catch (error) {
-      console.error('ISBN lookup failed:', error);
     } finally {
       isbnLookupLoading.value = false;
     }
@@ -312,12 +326,13 @@ export function useForm() {
     return normalizedValue ? normalizedValue : null;
   }
 
-  function validate(requiredFields: Array<'isbn' | 'title' | 'grade' | 'subject' | 'name' | 'quantity'>) {
+  function validate(requiredFields: Array<'isbn' | 'title' | 'grade' | 'subject' | 'price' | 'name' | 'quantity'>) {
     const nextErrors: Record<string, string> = {};
 
     if (requiredFields.includes('isbn') && !isbn.value.trim()) nextErrors.isbn = 'ISBN is required.';
     if (requiredFields.includes('isbn') && isbn.value.trim() && isbnValidity.value === false) nextErrors.isbn = 'ISBN must be valid.';
     if (requiredFields.includes('title') && !title.value.trim()) nextErrors.title = 'Title is required.';
+    if (requiredFields.includes('price') && (price.value === null || Number.isNaN(price.value) || price.value < 0)) nextErrors.price = 'Price must be 0 or more.';
     if (requiredFields.includes('name') && !name.value.trim()) nextErrors.name = 'Name is required.';
     if (requiredFields.includes('quantity') && (!quantity.value || quantity.value < 1)) nextErrors.quantity = 'Quantity must be at least 1.';
 

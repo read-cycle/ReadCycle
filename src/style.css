@@ -19,8 +19,10 @@ body {
   overflow-x: hidden;
 }
 #app {
-  width: 100dvw;
+  width: 100%;
+  max-width: 100%;
   min-height: 100dvh;
+  overflow-x: clip;
 }
 
 @media (max-width: 768px) {

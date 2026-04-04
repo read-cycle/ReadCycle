@@ -42,19 +42,24 @@ const { uploaderDocsData, buyerDocsData, currentDoc, displayItems, inputData, se
 .chats-page {
   height: 100dvh;
   min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
   padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: hidden;
   background: $color-background;
   color: $color-text;
 }
 
 .chats-layout {
   width: 100%;
+  max-width: 100%;
   flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
@@ -63,11 +68,15 @@ const { uploaderDocsData, buyerDocsData, currentDoc, displayItems, inputData, se
 }
 
 .chats-sidebar-panel {
+  width: 100%;
+  max-width: 100%;
+  max-width: 100vw;
   flex: 1 1 22rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
   min-height: 0;
+  min-width: 0;
 }
 
 .chat-list {
@@ -107,11 +116,13 @@ const { uploaderDocsData, buyerDocsData, currentDoc, displayItems, inputData, se
     height: auto;
     min-height: calc(100dvh - env(safe-area-inset-bottom));
     padding-bottom: calc(1rem + var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom));
-    overflow: auto;
+    overflow-x: clip;
+    overflow-y: auto;
   }
 
   .chats-layout {
     flex-direction: column;
+    min-width: 0;
     overflow: visible;
   }
 

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import AppImage from '../components/AppImage.vue';
 import LoadingButton from '../components/LoadingButton.vue';
 import type { FirestoreRecord } from '../composables/firestore';
 import type { useForm } from '../composables/useForm';
 import type { UploadDoc } from '../interfaces';
+import { getDisplayImageUrl } from '../utils/imageUrls';
 
 type PageForm = ReturnType<typeof useForm>;
 
@@ -26,15 +28,22 @@ const modalImages = computed(() => {
   const item = props.item?.[1];
   if (!item) return [];
 
-  return [item.listingImage, ...(item.extraImages || [])].filter(
-    (imageUrl): imageUrl is string => Boolean(imageUrl)
-  );
+  return [
+    {
+      thumbUrl: getDisplayImageUrl(item.listingImageThumb, item.listingImage),
+      fullUrl: item.listingImage
+    },
+    ...(item.extraImages || []).map((imageUrl, index) => ({
+      thumbUrl: getDisplayImageUrl(item.extraImageThumbs?.[index], imageUrl),
+      fullUrl: imageUrl
+    }))
+  ].filter((image) => Boolean(image.thumbUrl));
 });
 
-const activeImage = computed(() => modalImages.value[activeImageIndex.value] || '');
+const activeImage = computed(() => modalImages.value[activeImageIndex.value] || null);
 
 watch(
-  () => props.item?.[0].id,
+  () => props.item?.[0],
   () => {
     activeImageIndex.value = 0;
   }
@@ -70,7 +79,9 @@ function showNextImage() {
           </div>
 
           <div v-if="activeImage" class="browser-modal__gallery">
-            <img class="browser-modal__image" :src="activeImage" alt="Book photo" />
+            <a :href="activeImage.fullUrl" target="_blank" rel="noopener noreferrer" class="browser-modal__image-link">
+              <AppImage class="browser-modal__image" :src="activeImage.thumbUrl" alt="Book photo" eager />
+            </a>
 
             <div v-if="modalImages.length > 1" class="browser-modal__gallery-controls">
               <button type="button" class="browser-modal__gallery-btn" @click="showPreviousImage">
@@ -223,6 +234,10 @@ function showNextImage() {
 
 .browser-modal__gallery {
   margin-top: 1rem;
+}
+
+.browser-modal__image-link {
+  display: block;
 }
 
 .browser-modal__gallery-controls {

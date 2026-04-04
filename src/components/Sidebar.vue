@@ -4,14 +4,15 @@ import logo from '../assets/icons/rc_logo.svg'
 import { auth } from '../firebase-init';
 import router from '../router';
 import { LayoutDashboard, FileSearch2, Upload, MessageSquare, LogOut } from "lucide-vue-next";
+import { useChatUnreadCount } from '../composables/useChatUnreadCount';
+
+const { unreadChatCount } = useChatUnreadCount();
 
 const logout = async () => {
   try {
     await signOut(auth);
     await router.push('/login');
-  } catch (error) {
-    console.error('Error signing out:', error);
-  }
+  } catch {}
 };
 </script>
 <template>
@@ -37,7 +38,10 @@ const logout = async () => {
                       <p class="sidebar-text">Upload Books</p>
                     </router-link>                   
                     <router-link to="/chats" class="sidebar-item" active-class="active-link" exact>
-                      <MessageSquare></MessageSquare>
+                      <span class="sidebar-icon-wrap">
+                        <MessageSquare></MessageSquare>
+                        <span v-if="unreadChatCount" class="sidebar-badge">{{ unreadChatCount > 9 ? '9+' : unreadChatCount }}</span>
+                      </span>
                       <p class="sidebar-text">Chats</p>
                     </router-link>                   
             </div>
@@ -116,6 +120,32 @@ const logout = async () => {
           color: lightgrey;
           width: 25px;
           aspect-ratio: 1/1;
+        }
+
+        .sidebar-icon-wrap {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .sidebar-badge {
+          position: absolute;
+          top: -0.3rem;
+          right: -0.55rem;
+          min-width: 1.1rem;
+          height: 1.1rem;
+          padding: 0 0.25rem;
+          border-radius: 999px;
+          background: #ef4444;
+          color: white;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Manrope';
+          font-size: 0.65rem;
+          font-weight: 700;
+          line-height: 1;
         }
 
         .sidebar-text {

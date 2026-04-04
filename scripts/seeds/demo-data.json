@@ -1,0 +1,33 @@
+{
+  "uploadPool": [
+    {
+      "id": "demo-algebra-1",
+      "isbn": "9780000000001",
+      "title": "Demo Algebra 1",
+      "grade": "Grade 9",
+      "subject": "Mathematics",
+      "price": 450,
+      "quantity": 2,
+      "uploaderName": "Demo Seller",
+      "uploaderEmail": "seller@example.com",
+      "uploaderID": "demo-uploader-1",
+      "listingImage": "https://placehold.co/1200x1600/webp?text=Demo+Book",
+      "listingImageThumb": "https://placehold.co/400x600/webp?text=Demo+Book",
+      "extraImages": [],
+      "extraImageThumbs": []
+    }
+  ],
+  "watchlist": [
+    {
+      "id": "demo-watch-1",
+      "buyerName": "Demo Buyer",
+      "buyerQuantity": 1,
+      "buyerID": "demo-buyer-1",
+      "title": "Demo Algebra 1",
+      "subject": "Mathematics",
+      "isbn": "9780000000001",
+      "grade": "Grade 9",
+      "buyerEmail": "buyer@example.com"
+    }
+  ]
+}

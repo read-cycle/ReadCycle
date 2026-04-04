@@ -1,20 +1,20 @@
-import { addDoc, collection, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
-import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
+import { serverTimestamp } from 'firebase/firestore';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useToast } from 'vue-toastification';
-import { db, storage } from '../firebase-init';
-import type { BuyerRequestedDoc, ChatDisplayItem, Message } from '../interfaces';
-import { normalizeMetadataValue } from '../interfaces';
-import { mapQuerySnapshot, type FirestoreRecord } from './firestore';
+import type { ChatDisplayItem, MatchedChatDoc, Message } from '../interfaces';
+import { createMatchedMessage, markMatchedThreadRead, registerMatchedThreadMessage, subscribeToMatchedByBuyer, subscribeToMatchedByUploader, subscribeToMatchedMessages, updateMatchedMessageImages } from '../repositories/matchedRepo';
+import { uploadMatchedMessageAttachmentSet } from '../repositories/storageRepo';
+import { createChatAttachment } from '../utils/imageProcessing';
+import type { FirestoreRecord } from './firestore';
 import { useAuthGuard } from './useAuthGuard';
 import { useRequestNotifications } from './useRequestNotifications';
 
 export function useChatsPage() {
   const { user, authReady } = useAuthGuard();
   const toast = useToast();
-  const uploaderDocsData = ref<FirestoreRecord<BuyerRequestedDoc>[]>([]);
-  const buyerDocsData = ref<FirestoreRecord<BuyerRequestedDoc>[]>([]);
-  const currentDoc = ref<FirestoreRecord<BuyerRequestedDoc> | null>(null);
+  const uploaderDocsData = ref<FirestoreRecord<MatchedChatDoc>[]>([]);
+  const buyerDocsData = ref<FirestoreRecord<MatchedChatDoc>[]>([]);
+  const currentDoc = ref<FirestoreRecord<MatchedChatDoc> | null>(null);
   const messages = ref<Message[]>([]);
   const inputData = ref('');
   const sending = ref(false);
@@ -24,59 +24,66 @@ export function useChatsPage() {
   const notifications = useRequestNotifications();
   const userId = computed(() => user.value?.uid || '');
 
-  function normalizeBuyerRequestedDoc(data: Record<string, unknown> & { id: string }): BuyerRequestedDoc {
-    return {
-      id: data.id,
-      buyerName: typeof data.buyerName === 'string' ? data.buyerName : '',
-      buyerQuantity: typeof data.buyerQuantity === 'number' ? data.buyerQuantity : 0,
-      isbn: normalizeMetadataValue(data.isbn),
-      title: normalizeMetadataValue(data.title),
-      grade: normalizeMetadataValue(data.grade),
-      subject: normalizeMetadataValue(data.subject),
-      price: typeof data.price === 'number' ? data.price : 0,
-      quantity: typeof data.quantity === 'number' ? data.quantity : 0,
-      uploaderName: typeof data.uploaderName === 'string' ? data.uploaderName : '',
-      listingImage: typeof data.listingImage === 'string' ? data.listingImage : '',
-      extraImages: Array.isArray(data.extraImages) ? data.extraImages.filter((entry): entry is string => typeof entry === 'string') : [],
-      timestamp: data.timestamp as BuyerRequestedDoc['timestamp'],
-      uploaderEmail: typeof data.uploaderEmail === 'string' ? data.uploaderEmail : '',
-      buyerEmail: typeof data.buyerEmail === 'string' ? data.buyerEmail : '',
-      uploaderID: typeof data.uploaderID === 'string' ? data.uploaderID : '',
-      buyerID: typeof data.buyerID === 'string' ? data.buyerID : '',
-      listingDoc: data.listingDoc as BuyerRequestedDoc['listingDoc']
-    };
-  }
-
   let unsubscribeMessages: (() => void) | undefined;
+  let unsubscribeUploaderChats: (() => void) | undefined;
+  let unsubscribeBuyerChats: (() => void) | undefined;
 
   const displayItems = computed<ChatDisplayItem[]>(() => messages.value.map((message) => ({ type: 'message', message })));
   const emptyState = computed(() => !uploaderDocsData.value.length && !buyerDocsData.value.length);
   const currentDocFromBuyerList = computed(() =>
-    buyerDocsData.value.some(([docRef]) => docRef.id === currentDoc.value?.[0].id)
+    buyerDocsData.value.some(([docId]) => docId === currentDoc.value?.[0])
   );
 
-  async function loadChats() {
-    if (!user.value) return;
-
+  function syncCurrentDocSelection() {
     loadingLists.value = true;
-    const [uploaderResult, buyerResult] = await Promise.all([
-      getDocs(query(collection(db, 'matched'), where('uploaderID', '==', user.value.uid), orderBy('timestamp', 'desc'))),
-      getDocs(query(collection(db, 'matched'), where('buyerID', '==', user.value.uid), orderBy('timestamp', 'desc')))
-    ]);
-
-    uploaderDocsData.value = mapQuerySnapshot<BuyerRequestedDoc>(uploaderResult, normalizeBuyerRequestedDoc);
-    buyerDocsData.value = mapQuerySnapshot<BuyerRequestedDoc>(buyerResult, normalizeBuyerRequestedDoc);
-
-    const currentId = currentDoc.value?.[0].id;
+    const currentId = currentDoc.value?.[0];
     const nextCurrentDoc =
-      uploaderDocsData.value.find(([docRef]) => docRef.id === currentId) ||
-      buyerDocsData.value.find(([docRef]) => docRef.id === currentId) ||
+      uploaderDocsData.value.find(([docId]) => docId === currentId) ||
+      buyerDocsData.value.find(([docId]) => docId === currentId) ||
       uploaderDocsData.value[0] ||
       buyerDocsData.value[0] ||
       null;
 
     currentDoc.value = nextCurrentDoc;
     loadingLists.value = false;
+  }
+
+  function subscribeToChatLists(userUid: string) {
+    let pendingLists = 2;
+
+    const finishInitialLoad = () => {
+      pendingLists -= 1;
+      if (pendingLists <= 0) {
+        syncCurrentDocSelection();
+      }
+    };
+
+    unsubscribeUploaderChats?.();
+    unsubscribeBuyerChats?.();
+
+    unsubscribeUploaderChats = subscribeToMatchedByUploader(
+      userUid,
+      (docs) => {
+        uploaderDocsData.value = docs;
+        if (pendingLists > 0) {
+          finishInitialLoad();
+          return;
+        }
+        syncCurrentDocSelection();
+      }
+    );
+
+    unsubscribeBuyerChats = subscribeToMatchedByBuyer(
+      userUid,
+      (docs) => {
+        buyerDocsData.value = docs;
+        if (pendingLists > 0) {
+          finishInitialLoad();
+          return;
+        }
+        syncCurrentDocSelection();
+      }
+    );
   }
 
   watch(
@@ -87,11 +94,13 @@ export function useChatsPage() {
         buyerDocsData.value = [];
         currentDoc.value = null;
         messages.value = [];
+        unsubscribeUploaderChats?.();
+        unsubscribeBuyerChats?.();
         loadingLists.value = authReady.value ? false : loadingLists.value;
         return;
       }
 
-      await loadChats();
+      subscribeToChatLists(nextUser.uid);
     },
     { immediate: true }
   );
@@ -102,13 +111,22 @@ export function useChatsPage() {
 
     if (!value) return;
 
-    unsubscribeMessages = onSnapshot(query(collection(value[0], 'messages'), orderBy('timestamp', 'asc')), (snapshot) => {
-      messages.value = snapshot.docs.map((entry) => entry.data() as Message);
+    if (user.value) {
+      void markMatchedThreadRead(value, user.value.uid);
+    }
+
+    unsubscribeMessages = subscribeToMatchedMessages(value, (nextMessages) => {
+      messages.value = nextMessages;
+      if (user.value) {
+        void markMatchedThreadRead(value, user.value.uid);
+      }
     });
   });
 
   onBeforeUnmount(() => {
     unsubscribeMessages?.();
+    unsubscribeUploaderChats?.();
+    unsubscribeBuyerChats?.();
   });
 
   async function sendMessage() {
@@ -120,7 +138,7 @@ export function useChatsPage() {
     if (!trimmedText && !selectedFiles.length) return;
 
     sending.value = true;
-    const [docRef, docData] = currentDoc.value;
+    const [docId, docData] = currentDoc.value;
 
     try {
       const messagePayload: Omit<Message, 'timestamp'> & { timestamp: ReturnType<typeof serverTimestamp> } = {
@@ -134,38 +152,45 @@ export function useChatsPage() {
         messagePayload.text = trimmedText;
       }
 
-      const messageRef = await addDoc(collection(docRef, 'messages'), messagePayload);
+      const messageRef = await createMatchedMessage(currentDoc.value, messagePayload);
 
       if (selectedFiles.length > 0) {
-        const uploads = [];
+        const uploads = await Promise.all(
+          selectedFiles.map(async (file, index) => {
+            const processedFiles = await createChatAttachment(file);
+            return uploadMatchedMessageAttachmentSet(
+              docId,
+              messageRef.id,
+              index,
+              processedFiles.displayFile,
+              processedFiles.thumbFile
+            );
+          })
+        );
 
-        for (const file of selectedFiles) {
-          const imageRef = storageRef(
-            storage,
-            `matched/${docRef.id}/${messageRef.id}/${file.name}`
-          );
-
-          await uploadBytes(imageRef, file);
-          const url = await getDownloadURL(imageRef);
-          uploads.push(url);
-        }
-
-        await updateDoc(messageRef, {
-          imageUrls: uploads
-        });
+        await updateMatchedMessageImages(
+          messageRef,
+          uploads.map((entry) => entry.imageUrl),
+          uploads.map((entry) => entry.imageThumbUrl)
+        );
       }
+
+      await registerMatchedThreadMessage(
+        currentDoc.value,
+        user.value.uid,
+        trimmedText || (selectedFiles.length ? 'Sent an image' : 'New message')
+      );
 
       inputData.value = '';
       files.value = null;
     } catch (error) {
-      console.error('Failed to send message:', error);
       toast.error('Failed to send message.');
     } finally {
       sending.value = false;
     }
   }
 
-  function selectChat(docData: FirestoreRecord<BuyerRequestedDoc>) {
+  function selectChat(docData: FirestoreRecord<MatchedChatDoc>) {
     currentDoc.value = docData;
   }
 

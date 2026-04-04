@@ -1,19 +1,31 @@
 <script setup lang="ts">
+import AutocompleteInput from '../components/AutocompleteInput.vue';
 import LoadingButton from '../components/LoadingButton.vue';
 import type { useForm } from '../composables/useForm';
 
 type PageForm = ReturnType<typeof useForm>;
 
-defineProps<{
+defineEmits<{
+  close: [];
+  submit: [];
+}>();
+
+const props = defineProps<{
   open: boolean;
   form: PageForm;
   loading: boolean;
 }>();
 
-defineEmits<{
-  close: [];
-  submit: [];
-}>();
+async function handleIsbnOptionSelect(isbn: string) {
+  props.form.setField('isbn', isbn);
+  delete props.form.errors.value.isbn;
+  await props.form.runIsbnLookup();
+}
+
+function handleTitleOptionSelect(title: string) {
+  props.form.setField('title', title);
+  props.form.inferFromTitle();
+}
 </script>
 
 <template>
@@ -30,14 +42,22 @@ defineEmits<{
               ISBN
               <span class="field-help" tabindex="0" data-tooltip="Scan the barcode on the back of the book. ISBN means International Standard Book Number, usually a 10 or 13 digit book ID.">?</span>
             </span>
-            <input
+            <AutocompleteInput
               v-model="form.isbn.value"
-              list="dashboard-isbn-options"
+              :options="form.isbnOptions"
+              inputmode="numeric"
+              enterkeyhint="next"
+              spellcheck="false"
+              autocapitalize="off"
+              autocomplete="off"
               :class="{
                 'is-valid': form.isbnValidity.value === true,
                 'is-invalid': form.isbnValidity.value === false
               }"
+              :valid="form.isbnValidity.value === true"
+              :invalid="form.isbnValidity.value === false"
               @blur="form.runIsbnLookup"
+              @option-select="handleIsbnOptionSelect"
             />
             <span
               v-if="form.isbnValidity.value !== null"
@@ -50,19 +70,21 @@ defineEmits<{
               {{ form.isbnValidity.value ? 'Valid ISBN' : 'Invalid ISBN' }}
             </span>
           </label>
-          <datalist id="dashboard-isbn-options">
-            <option v-for="option in form.isbnOptions" :key="option" :value="option" />
-          </datalist>
           <label>
             <span class="field-label">
               Title
               <span class="field-help" tabindex="0" data-tooltip="Enter the book title shown on the cover. Scanning a valid ISBN will usually fill this automatically.">?</span>
             </span>
-            <input v-model="form.title.value" list="dashboard-title-options" @input="form.dismissAutofill('title')" @blur="form.inferFromTitle" />
+            <AutocompleteInput
+              v-model="form.title.value"
+              :options="form.titleOptions"
+              enterkeyhint="next"
+              autocomplete="off"
+              @input="form.dismissAutofill('title')"
+              @blur="form.inferFromTitle"
+              @option-select="handleTitleOptionSelect"
+            />
           </label>
-          <datalist id="dashboard-title-options">
-            <option v-for="option in form.titleOptions" :key="option" :value="option" />
-          </datalist>
           <label>
             <span class="field-label">
               Grade

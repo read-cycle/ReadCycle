@@ -124,7 +124,6 @@ function createLoginPageStore() {
         router.push('/dashboard');
       })
       .catch(async (error) => {
-        console.error('Login error:', error);
         toast.error(humanizeFirebaseError(error, 'login'));
       })
       .finally(() => {
@@ -154,7 +153,6 @@ function createLoginPageStore() {
         toast.success('Account created. Check your email to verify it before logging in.');
       })
       .catch((error) => {
-        console.error('Sign-up error:', error);
         toast.error(humanizeFirebaseError(error, 'signup'));
       })
       .finally(() => {
@@ -162,16 +160,24 @@ function createLoginPageStore() {
       });
   }
 
-  function signInWithProvider(provider: GoogleAuthProvider | OAuthProvider | FacebookAuthProvider | TwitterAuthProvider) {
-    signInWithPopup(auth, provider)
-      .then(() => {
-        toast.success('Signed in successfully.');
-        router.push('/dashboard');
-      })
-      .catch((error) => {
-        console.error(error);
+  async function signInWithProvider(provider: GoogleAuthProvider | OAuthProvider | FacebookAuthProvider | TwitterAuthProvider) {
+    if (authLoading.value) return;
+
+    authLoading.value = true;
+
+    try {
+      await signInWithPopup(auth, provider);
+      toast.success('Signed in successfully.');
+      await router.push('/dashboard');
+    } catch (error) {
+      // Ignore duplicate popup attempts triggered while a previous OAuth flow
+      // is still in flight; the active request should continue normally.
+      if ((error as { code?: string } | null | undefined)?.code !== 'auth/cancelled-popup-request') {
         toast.error(humanizeFirebaseError(error, 'oauth'));
-      });
+      }
+    } finally {
+      authLoading.value = false;
+    }
   }
 
   function signInGoogle() {
@@ -207,7 +213,6 @@ function createLoginPageStore() {
       await sendPasswordResetEmail(auth, emailValue);
       toast.success('Password reset email sent.');
     } catch (error) {
-      console.error(error);
       toast.error(humanizeFirebaseError(error, 'reset'));
     }
   }

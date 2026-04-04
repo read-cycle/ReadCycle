@@ -26,7 +26,10 @@ function handleExtraImages(value: File[] | null) {
     <div class="uploader-grid">
       <div class="uploader-card">
         <div class="uploader-card__header">
-          <h3>Listing image</h3>
+          <h3>
+            Listing image
+            <span class="field-indicator field-indicator--required">Required</span>
+          </h3>
           <span v-if="listingImageName" class="caption caption--filename" :title="listingImageName">{{ listingImageName }}</span>
         </div>
         <ImageUploader :multiple="false" @update:modelValue="handleListingImage" />
@@ -34,7 +37,10 @@ function handleExtraImages(value: File[] | null) {
 
       <div class="uploader-card">
         <div class="uploader-card__header">
-          <h3>Extra images</h3>
+          <h3>
+            Extra images
+            <span class="field-indicator field-indicator--optional">Optional</span>
+          </h3>
           <span v-if="extraImagesCount" class="caption">{{ extraImagesCount }} selected</span>
         </div>
         <ImageUploader :multiple="true" @update:modelValue="handleExtraImages" />
@@ -86,7 +92,32 @@ function handleExtraImages(value: File[] | null) {
   margin: 0;
   font-family: 'Manrope';
   font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
   flex-shrink: 0;
+}
+
+.field-indicator {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  font-family: 'Nunito';
+}
+
+.field-indicator--required {
+  background: rgba(34, 197, 94, 0.14);
+  color: #166534;
+}
+
+.field-indicator--optional {
+  background: rgba(15, 23, 42, 0.08);
+  color: $color-text-secondary;
 }
 
 .caption {

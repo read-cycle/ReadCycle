@@ -16,7 +16,7 @@ const { loading, loadingMore, hasMore, submitLoading, searchQuery, filteredDocs,
   <Navbar class="browser-navbar" />
   <main class="browser-page">
     <MetaBar title="Browse" @notif-click="notifications.openNotification" />
-    <BrowserToolbar v-model="searchQuery" />
+    <BrowserToolbar v-model="searchQuery" :disabled="loading" />
     <BrowserResults :loading="loading" :loading-more="loadingMore" :has-more="hasMore" :docs="filteredDocs" @load-more="loadMoreBooks" @select="selectDoc" />
   </main>
 

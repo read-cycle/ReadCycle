@@ -1,6 +1,9 @@
 {
   "projects": {
-    "default": "book-exchange-22dd2"
+    "default": "book-exchange-22dd2",
+    "local": "readcycle-testing",
+    "staging": "readcycle-staging",
+    "production": "book-exchange-22dd2"
   },
   "targets": {
     "book-exchange-22dd2": {

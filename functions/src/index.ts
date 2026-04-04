@@ -1,14 +1,16 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import cors from "cors";
+import * as nodemailer from "nodemailer";
 
 const corsHandler = cors({ origin: true });
 
-const BREVO_KEY = defineSecret("BREVO_KEY");
+const GMAIL_APP_PASSWORD = defineSecret("GMAIL_APP_PASSWORD");
 
 export const sendEmail = onRequest(
   {
-    secrets: [BREVO_KEY],
+    secrets: [GMAIL_APP_PASSWORD],
+    region: "asia-south1"
   },
   async (req, res) => {
     corsHandler(req, res, async () => {
@@ -19,25 +21,22 @@ export const sendEmail = onRequest(
           return res.status(400).json({ error: "Missing required fields" });
         }
 
-        const apiKey = BREVO_KEY.value();
-
-        const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "api-key": apiKey,
-            "accept": "application/json",
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: "readcycle@inventureacademy.com",
+            pass: GMAIL_APP_PASSWORD.value(),
           },
-          body: JSON.stringify({
-            sender: { email: "read.cycle.inv@gmail.com", name: "ReadCycle" },
-            to: [{ email }],
-            subject,
-            htmlContent: body,
-          }),
         });
 
-        const data = await response.json();
-        return res.status(200).json(data);
+        await transporter.sendMail({
+          from: "ReadCycle <readcycle@inventureacademy.com>",
+          to: email,
+          subject,
+          html: body,
+        });
+
+        return res.status(200).json({ success: true });
 
       } catch (error: any) {
         console.error(error);

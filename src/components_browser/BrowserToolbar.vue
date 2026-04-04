@@ -1,6 +1,7 @@
 <script setup lang="ts">
 defineProps<{
   modelValue: string;
+  disabled?: boolean;
 }>();
 
 defineEmits<{
@@ -12,7 +13,7 @@ defineEmits<{
   <section class="browser-toolbar">
     <label class="browser-search">
       Search
-      <input :value="modelValue" type="text" placeholder="Search by title, grade, or subject" @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)" />
+      <input :value="modelValue" :disabled="disabled" type="text" :placeholder="disabled ? 'Loading books...' : 'Search by title, grade, or subject'" @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)" />
     </label>
   </section>
 </template>
@@ -35,5 +36,10 @@ defineEmits<{
   border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 12px;
   padding: 0.75rem;
+}
+
+.browser-search input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 </style>

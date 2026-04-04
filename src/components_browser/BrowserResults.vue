@@ -61,7 +61,7 @@ onBeforeUnmount(() => {
   </section>
 
   <section v-else class="browser-results">
-    <BrowserCard v-for="docData in docs" :key="docData[0].id" :data="docData[1]" @click="$emit('select', docData)" />
+    <BrowserCard v-for="docData in docs" :key="docData[0]" :data="docData[1]" @click="$emit('select', docData)" />
   </section>
 
   <div v-if="!loading && hasMore" ref="loadMoreRef" class="browser-load-more">

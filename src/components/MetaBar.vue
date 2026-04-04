@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useToast } from 'vue-toastification';
-import { query, collection, orderBy, getDocs, where } from 'firebase/firestore';
-import { auth, db } from '../firebase-init';
+import { orderBy, where } from 'firebase/firestore';
+import { auth } from '../firebase-init';
 import type { BuyerRequestedDoc } from '../interfaces';
-import { normalizeMetadataValue } from '../interfaces';
+import { subscribeToHydratedBuyerRequests } from '../composables/buyerRequests';
 import { updateProfile, onAuthStateChanged, updatePassword, linkWithPopup, GoogleAuthProvider, FacebookAuthProvider, TwitterAuthProvider, OAuthProvider, deleteUser } from 'firebase/auth';
 import router from '../router';
 import type { FirestoreRecord } from '../composables/firestore';
@@ -16,29 +16,9 @@ let userEmail: string | null = null;
 const toast = useToast();
 
 const docsData = ref<FirestoreRecord<BuyerRequestedDoc>[]>([]);
-
-function normalizeBuyerRequestedDoc(data: Record<string, unknown> & { id: string }): BuyerRequestedDoc {
-  return {
-    id: data.id,
-    buyerName: typeof data.buyerName === 'string' ? data.buyerName : '',
-    buyerQuantity: typeof data.buyerQuantity === 'number' ? data.buyerQuantity : 0,
-    isbn: normalizeMetadataValue(data.isbn),
-    title: normalizeMetadataValue(data.title),
-    grade: normalizeMetadataValue(data.grade),
-    subject: normalizeMetadataValue(data.subject),
-    price: typeof data.price === 'number' ? data.price : 0,
-    quantity: typeof data.quantity === 'number' ? data.quantity : 0,
-    uploaderName: typeof data.uploaderName === 'string' ? data.uploaderName : '',
-    listingImage: typeof data.listingImage === 'string' ? data.listingImage : '',
-    extraImages: Array.isArray(data.extraImages) ? data.extraImages.filter((entry): entry is string => typeof entry === 'string') : [],
-    timestamp: data.timestamp as BuyerRequestedDoc['timestamp'],
-    uploaderEmail: typeof data.uploaderEmail === 'string' ? data.uploaderEmail : '',
-    buyerEmail: typeof data.buyerEmail === 'string' ? data.buyerEmail : '',
-    uploaderID: typeof data.uploaderID === 'string' ? data.uploaderID : '',
-    buyerID: typeof data.buyerID === 'string' ? data.buyerID : '',
-    listingDoc: data.listingDoc as BuyerRequestedDoc['listingDoc']
-  };
-}
+let unsubscribeNotifications: (() => void) | undefined;
+const seenNotificationIds = new Set<string>();
+const notificationsHydrated = ref(false);
 
 function getErrorDetails(error: unknown) {
   return error as { code?: string; message?: string };
@@ -46,7 +26,6 @@ function getErrorDetails(error: unknown) {
 
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    console.log("User Exists")
     userID = user.uid;
     userEmail = user.email;
     userName = user.displayName;
@@ -55,30 +34,32 @@ onAuthStateChanged(auth, (user) => {
     twitterLinkedEmail.value = user.providerData.find(x => x.providerId == 'twitter.com')?.email;
     microsoftLinkedEmail.value = user.providerData.find(x => x.providerId == 'microsoft.com')?.email;
 
-    const uploadDocs = query(
-      collection(db, 'buyerRequested'),
-      where('uploaderID', '==', userID),
-      orderBy('timestamp', 'desc')
+    unsubscribeNotifications?.();
+    unsubscribeNotifications = subscribeToHydratedBuyerRequests(
+      [where('uploaderID', '==', userID), orderBy('timestamp', 'desc')],
+      (docs) => {
+        docsData.value = docs;
+      }
     );
 
-    getDocs(uploadDocs).then((result) => {
-      console.log(result)
-      docsData.value = result.docs.map((doc) => {
-        const data = normalizeBuyerRequestedDoc({ id: doc.id, ...doc.data() });
-        console.log("Requested Docs:")
-        console.log(data)
-        return [doc.ref, data];
-      });
-    });
-
   } else {
+    unsubscribeNotifications?.();
+    docsData.value = [];
     router.push('/login')
   }
 })
 
+onBeforeUnmount(() => {
+  unsubscribeNotifications?.();
+});
+
 defineProps({
     title: String
 });
+
+const emit = defineEmits<{
+  'notif-click': [FirestoreRecord<BuyerRequestedDoc>];
+}>();
 
 const googleLinkedEmail = ref<string | null>();
 const facebookLinkedEmail = ref<string | null>();
@@ -88,6 +69,9 @@ const microsoftLinkedEmail = ref<string | null>();
 const showNotifs = ref(false);
 
 const iconHtml: LucideIcon = computed(() => docsData.value.length >= 1 ? BellDot : Bell)
+const notificationCount = computed(() => docsData.value.length);
+const hasNotifications = computed(() => notificationCount.value > 0);
+const hasUnreadPulse = ref(false);
 
 const toggleSettingsModal = ref(false);
 
@@ -112,7 +96,6 @@ async function deleteAccount() {
       toast.error('Please re-authenticate before deleting your account.');
       router.push('/login');
     } else {
-      console.error(error);
       toast.error(`Error deleting account: ${firebaseError.message ?? 'Unknown error'}`);
     }
   }
@@ -133,7 +116,6 @@ async function resetPassword() {
       toast.error('Please re-authenticate before changing your password.');
       router.push('/login');
     } else {
-      console.error(error);
       toast.error(`Error changing password: ${firebaseError.message ?? 'Unknown error'}`);
     }
   }
@@ -143,14 +125,12 @@ async function linkGoogleAccount() {
   if(!auth.currentUser) return
   const provider = new GoogleAuthProvider();
   try {
-    const result = await linkWithPopup(auth.currentUser, provider);
-    console.log("Linked provider:", result.user.providerData);
+    await linkWithPopup(auth.currentUser, provider);
   } catch (error: unknown) {
     const firebaseError = getErrorDetails(error);
     if (firebaseError.code === "auth/credential-already-in-use") {
       toast.error('That Google account is already linked with another user.');
     } else {
-      console.error(error);
       toast.error('Failed to link Google account.');
     }
   }
@@ -160,14 +140,12 @@ async function linkMetaAccount() {
   if(!auth.currentUser) return
   const provider = new FacebookAuthProvider();
   try {
-    const result = await linkWithPopup(auth.currentUser, provider);
-    console.log("Linked provider:", result.user.providerData);
+    await linkWithPopup(auth.currentUser, provider);
   } catch (error: unknown) {
     const firebaseError = getErrorDetails(error);
     if (firebaseError.code === "auth/credential-already-in-use") {
       toast.error('That Meta account is already linked with another user.');
     } else {
-      console.error(error);
       toast.error('Failed to link Meta account.');
     }
   }
@@ -177,14 +155,12 @@ async function linkTwitterAccount() {
   if(!auth.currentUser) return
   const provider = new TwitterAuthProvider();
   try {
-    const result = await linkWithPopup(auth.currentUser, provider);
-    console.log("Linked provider:", result.user.providerData);
+    await linkWithPopup(auth.currentUser, provider);
   } catch (error: unknown) {
     const firebaseError = getErrorDetails(error);
     if (firebaseError.code === "auth/credential-already-in-use") {
       toast.error('That Twitter/X account is already linked with another user.');
     } else {
-      console.error(error);
       toast.error('Failed to link Twitter/X account.');
     }
   }
@@ -194,14 +170,12 @@ async function linkMicrosoftAccount() {
   if(!auth.currentUser) return
   const provider = new OAuthProvider('microsoft.com');
   try {
-    const result = await linkWithPopup(auth.currentUser, provider);
-    console.log("Linked provider:", result.user.providerData);
+    await linkWithPopup(auth.currentUser, provider);
   } catch (error: unknown) {
     const firebaseError = getErrorDetails(error);
     if (firebaseError.code === "auth/credential-already-in-use") {
       toast.error('That Microsoft account is already linked with another user.');
     } else {
-      console.error(error);
       toast.error('Failed to link Microsoft account.');
     }
   }
@@ -215,10 +189,8 @@ async function changeDisplayName() {
   try {
     await updateProfile(auth.currentUser, { displayName: newDisplayName.value });
     toast.success('Display name updated.');
-    console.log("New name:", auth.currentUser.displayName);
   } catch (error: unknown) {
     const firebaseError = getErrorDetails(error);
-    console.error("Error updating display name:", error);
     toast.error(`Error: ${firebaseError.message ?? 'Unknown error'}`);
   }
 }
@@ -236,19 +208,62 @@ function closeSettingsModal() {
   document.body.style.overflow = "auto";
   document.body.style.overflowX = "hidden";
 }
+
+function openNotificationItem(item: FirestoreRecord<BuyerRequestedDoc>) {
+  showNotifs.value = false;
+  hasUnreadPulse.value = false;
+  emit('notif-click', item);
+}
+
+watch(
+  docsData,
+  (nextDocs) => {
+    const nextIds = new Set(nextDocs.map(([docId]) => docId));
+
+    if (!notificationsHydrated.value) {
+      nextIds.forEach((id) => seenNotificationIds.add(id));
+      notificationsHydrated.value = true;
+      return;
+    }
+
+    nextDocs.forEach((item) => {
+      const id = item[0];
+      if (seenNotificationIds.has(id)) return;
+
+      seenNotificationIds.add(id);
+      hasUnreadPulse.value = true;
+      toast.info(`New request from ${item[1].buyerName || 'a buyer'} for ${item[1].title || 'a listing'}.`, {
+        timeout: 8000,
+        closeOnClick: false,
+        onClick: () => openNotificationItem(item)
+      });
+    });
+
+    Array.from(seenNotificationIds).forEach((id) => {
+      if (!nextIds.has(id)) {
+        seenNotificationIds.delete(id);
+      }
+    });
+  },
+  { deep: false }
+);
 </script>
 <template>
     <div class="meta-container">
         <h1 class="page-header">{{ title }}</h1>
-        <button class="meta-button" @click="showNotifs = !showNotifs">
+        <button class="meta-button" :class="{ 'meta-button--alert': hasNotifications, 'meta-button--pulse': hasUnreadPulse }" @click="showNotifs = !showNotifs; hasUnreadPulse = false">
         <div class="icon-container">
             <component :is="iconHtml"></component>
+            <span v-if="notificationCount" class="notification-count">{{ notificationCount > 9 ? '9+' : notificationCount }}</span>
         </div>
         <div v-if="showNotifs" class="notifications-dropdown">
           <div class="notif-block title-block">
             <label>Notifications</label>
           </div>
-          <div class="notif-block" v-for="item in docsData" @click="$emit('notif-click', item)" ref="notifBlocks">
+          <div v-if="!docsData.length" class="notif-block notif-block--empty">
+            <p>No new requests right now.</p>
+          </div>
+          <div class="notif-block notif-block--actionable" v-for="item in docsData" @click="openNotificationItem(item)" ref="notifBlocks">
             <div class="label-track">
               <label class="title-label">{{ item[1].title }}</label>
               <label class="grade-label">{{ item[1].grade }}</label>
@@ -353,6 +368,7 @@ function closeSettingsModal() {
     cursor: pointer;
     padding: 0;
     .icon-container {
+        position: relative;
         @extend %filler;
         @extend %centered;
         :deep(svg) {
@@ -362,6 +378,29 @@ function closeSettingsModal() {
             max-height: 20px;
         }
     }
+}
+.meta-button--alert {
+  border-radius: 999px;
+  background: rgba(58, 122, 254, 0.1);
+}
+.meta-button--pulse .icon-container {
+  animation: metaNotifPulse 1.6s ease-in-out infinite;
+}
+.notification-count {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: white;
+  font-family: 'Manrope';
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.28);
 }
 .notifications-dropdown {
   position: absolute;
@@ -432,13 +471,36 @@ function closeSettingsModal() {
       display: flex;
       p {
         font-family: 'Nunito';
+        margin: 0;
       }
+    }
+  }
+  .notif-block--actionable {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    &:hover {
+      background: rgba(58, 122, 254, 0.05);
+    }
+  }
+  .notif-block--empty {
+    p {
+      margin: 0;
+      font-family: 'Nunito';
+      color: rgba(15, 23, 42, 0.65);
     }
   }
   .title-block {
     label {
       font-family: 'Manrope';
     }
+  }
+}
+@keyframes metaNotifPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
   }
 }
 ::-webkit-scrollbar {

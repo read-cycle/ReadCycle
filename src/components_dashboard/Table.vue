@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { DocumentReference } from 'firebase/firestore';
 import { computed } from 'vue';
 import type { FirestoreRecord } from '../composables/firestore';
 import type { UploadDoc, WatchlistDoc } from '../interfaces';
@@ -17,7 +16,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'watchlist-click': [];
-  delete: [DocumentReference];
+  delete: [string];
 }>();
 
 const emptyMessage = computed(() =>
@@ -51,16 +50,18 @@ const SKELETON_ROWS = 3;
     </div>
 
     <div v-else class="table">
-      <div class="table-item dashboard-table__labels">
-        <div class="table-item__cell cell--thumb">Cover</div>
+      <div class="dashboard-table__scroll">
+        <div class="table-item dashboard-table__labels">
+          <div class="table-item__cell cell--thumb">Cover</div>
         <div class="table-item__cell cell--title">Title</div>
         <div class="table-item__cell">Grade</div>
         <div class="table-item__cell">Date</div>
         <div class="table-item__cell">Action</div>
       </div>
-      <ul class="dashboard-table__list">
-        <TableItem v-for="doc in docs" :key="doc[0].id" :doc="doc" @delete="emit('delete', $event)" />
-      </ul>
+        <ul class="dashboard-table__list">
+          <TableItem v-for="doc in docs" :key="doc[0]" :doc="doc" @delete="emit('delete', $event)" />
+        </ul>
+      </div>
     </div>
   </section>
 </template>
@@ -156,6 +157,16 @@ const SKELETON_ROWS = 3;
   overflow-x: auto;
 }
 
+.dashboard-table__scroll {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: min(30rem, 55vh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
 .table--loading {
   justify-content: flex-start;
 }
@@ -164,7 +175,10 @@ const SKELETON_ROWS = 3;
   color: rgba(15, 23, 42, 0.56);
   font-family: 'Manrope';
   display: flex;
-
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: $color-background-secondary;
 }
 
 .dashboard-table__list {
@@ -193,6 +207,16 @@ const SKELETON_ROWS = 3;
   .dashboard-table__labels,
   .dashboard-table__list :deep(.table-item) {
     min-width: 600px;
+  }
+
+  .dashboard-table__scroll {
+    max-height: min(26rem, 50vh);
+  }
+}
+
+@media (min-width: 1025px) {
+  .dashboard-table__scroll {
+    max-height: calc(100dvh - 24rem);
   }
 }
 </style>

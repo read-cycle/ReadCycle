@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import type { Timestamp } from 'firebase/firestore';
+import AppImage from '../components/AppImage.vue';
 import type { UploadDoc } from '../interfaces';
+import { getDisplayImageUrl } from '../utils/imageUrls';
 const props = defineProps<{
  data: UploadDoc
 }>()
 
 function getListingImage(image: UploadDoc['listingImage']) {
   return Array.isArray(image) ? image[0] : image;
+}
+
+function getListingThumbnail(doc: UploadDoc) {
+  return getDisplayImageUrl(doc.listingImageThumb, getListingImage(doc.listingImage));
 }
 function formatTimestampToDDMMYY(ts: Timestamp) {
   const date = ts.toDate()
@@ -18,8 +24,8 @@ function formatTimestampToDDMMYY(ts: Timestamp) {
 </script>
 <template>
 <div class="card-container browsercard-container">
-    <div class="image-container" :style="{ backgroundImage: `url(${getListingImage(data.listingImage)})` }">
-
+    <div class="image-container">
+        <AppImage :src="getListingThumbnail(data)" :alt="`Cover of ${props.data.title || 'book listing'}`" class="image-container__img" />
     </div>
     <div class="text-container">
         <div class="main-text-container">
@@ -52,9 +58,13 @@ function formatTimestampToDDMMYY(ts: Timestamp) {
         min-height: 180px;
         height: 60%;
         width: 100%;
-        background-size: cover;
-        background-position: center center;
-        background-repeat: no-repeat;
+        overflow: hidden;
+    }
+    .image-container__img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
     .text-container {
         height: 40%;

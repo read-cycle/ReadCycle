@@ -1,9 +1,10 @@
-import { addDoc, collection, getDoc } from 'firebase/firestore';
+import { getDoc } from 'firebase/firestore';
 import { computed, ref, watch } from 'vue';
 import { useToast } from 'vue-toastification';
-import { db } from '../firebase-init';
 import { createBookRequestEmail } from '../emailTemplates';
 import type { BuyerRequestedDoc, UploadDoc } from '../interfaces';
+import { createBuyerRequestedEntry } from '../repositories/buyerRequestsRepo';
+import { uploadPoolDoc } from '../repositories/firestoreRefs';
 import { sendEmail } from '../sendEmail';
 import { useForm } from './useForm';
 import type { FirestoreRecord } from './firestore';
@@ -36,7 +37,8 @@ export function useBrowserPage() {
       const title = docData.title?.toLowerCase() || '';
       const grade = docData.grade?.toLowerCase() || '';
       const subject = docData.subject?.toLowerCase() || '';
-      return title.includes(queryValue) || grade.includes(queryValue) || subject.includes(queryValue);
+      const isbn = docData.isbn?.toLowerCase() || '';
+      return title.includes(queryValue) || grade.includes(queryValue) || subject.includes(queryValue) || isbn.includes(queryValue);
     });
   });
 
@@ -120,8 +122,8 @@ export function useBrowserPage() {
 
     submitLoading.value = true;
     try {
-      const [docRef, docData] = selectedDoc.value;
-      const latest = await getDoc(docRef);
+      const [docId, docData] = selectedDoc.value;
+      const latest = await getDoc(uploadPoolDoc(docId));
       if (!latest.exists()) {
         toast.error('This listing is no longer available.');
         selectedDoc.value = null;
@@ -157,14 +159,26 @@ export function useBrowserPage() {
           })
       );
 
-      await addDoc(collection(db, 'buyerRequested'), {
-        ...docData,
+      await createBuyerRequestedEntry({
         buyerName: requestForm.payload.value.name,
         buyerQuantity: requestForm.payload.value.quantity,
         buyerID: user.value.uid,
         buyerEmail: user.value.email,
-        listingDoc: docRef
-      } as BuyerRequestedDoc);
+        uploaderID: docData.uploaderID,
+        uploaderEmail: docData.uploaderEmail,
+        listingId: docId,
+        isbn: docData.isbn,
+        title: docData.title,
+        grade: docData.grade,
+        subject: docData.subject,
+        price: docData.price,
+        quantity: docData.quantity,
+        uploaderName: docData.uploaderName,
+        listingImage: docData.listingImage,
+        listingImageThumb: docData.listingImageThumb,
+        extraImages: docData.extraImages,
+        extraImageThumbs: docData.extraImageThumbs,
+      } as Omit<BuyerRequestedDoc, 'id' | 'timestamp'>);
 
       requestForm.reset({
         name: user.value.displayName || '',
@@ -173,7 +187,6 @@ export function useBrowserPage() {
       selectedDoc.value = null;
       toast.success('Request sent. The uploader has been notified.');
     } catch (error) {
-      console.error('Failed to submit request:', error);
       toast.error('Failed to submit request.');
     } finally {
       submitLoading.value = false;

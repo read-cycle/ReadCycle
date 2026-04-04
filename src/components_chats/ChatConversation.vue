@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import LoadingButton from '../components/LoadingButton.vue';
 import type { FirestoreRecord } from '../composables/firestore';
-import type { BuyerRequestedDoc, ChatDisplayItem } from '../interfaces';
+import type { ChatDisplayItem, MatchedChatDoc } from '../interfaces';
 import { PaperclipIcon, SendIcon } from 'lucide-vue-next';
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 
 const props = defineProps<{
-  currentDoc: FirestoreRecord<BuyerRequestedDoc> | null;
+  currentDoc: FirestoreRecord<MatchedChatDoc> | null;
   displayItems: ChatDisplayItem[];
   currentUserId: string;
   inputValue: string;
@@ -39,13 +39,19 @@ function onFileChange(e: Event) {
 
 function getMessageImages(item: ChatDisplayItem) {
   if (!item.message) return [];
+  const thumbList = item.message.imageThumbUrls?.filter(Boolean) ?? [];
   const multiImageList = item.message.imageUrls?.filter(Boolean) ?? [];
 
   if (multiImageList.length > 0) {
-    return multiImageList;
+    return multiImageList.map((imageUrl, index) => ({
+      thumbUrl: thumbList[index] || imageUrl,
+      fullUrl: imageUrl
+    }));
   }
 
-  return item.message.imageUrl ? [item.message.imageUrl] : [];
+  return item.message.imageUrl
+    ? [{ thumbUrl: item.message.imageUrl, fullUrl: item.message.imageUrl }]
+    : [];
 }
 
 function formatMessageDateTime(item: ChatDisplayItem) {
@@ -70,7 +76,7 @@ async function scrollMessagesToBottom(behavior: ScrollBehavior = 'smooth') {
 }
 
 watch(
-  () => props.currentDoc?.[0].id,
+  () => props.currentDoc?.[0],
   () => {
     void scrollMessagesToBottom('auto');
   }
@@ -133,7 +139,16 @@ onBeforeUnmount(() => {
         <div class="chat-message__body">
           <p v-if="item.message?.text">{{ item.message.text }}</p>
           <div v-if="getMessageImages(item).length" class="chat-message__images">
-            <img v-for="(imageUrl, imageIndex) in getMessageImages(item)" :key="`${index}-${imageIndex}`" :src="imageUrl" :alt="`Attachment ${imageIndex + 1}`" />
+            <a
+              v-for="(image, imageIndex) in getMessageImages(item)"
+              :key="`${index}-${imageIndex}`"
+              :href="image.fullUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="chat-message__image-link"
+            >
+              <img :src="image.thumbUrl" :alt="`Attachment ${imageIndex + 1}`" loading="lazy" decoding="async" />
+            </a>
           </div>
         </div>
       </div>
@@ -141,7 +156,7 @@ onBeforeUnmount(() => {
 
     <form class="chat-panel__composer" @submit.prevent="$emit('submit')">
       <div v-if="attachmentPreviewUrls.length" class="chat-panel__attachment-track">
-        <img v-for="(previewUrl, previewIndex) in attachmentPreviewUrls" :key="`${previewUrl}-${previewIndex}`" :src="previewUrl" :alt="`Pending attachment ${previewIndex + 1}`" class="chat-panel__attachment-preview" />
+        <img v-for="(previewUrl, previewIndex) in attachmentPreviewUrls" :key="`${previewUrl}-${previewIndex}`" :src="previewUrl" :alt="`Pending attachment ${previewIndex + 1}`" class="chat-panel__attachment-preview" decoding="async" />
       </div>
       <input :value="inputValue" type="text" placeholder="Write something..." @input="$emit('update:inputValue', ($event.target as HTMLInputElement).value)" />
       <LoadingButton
@@ -157,6 +172,8 @@ onBeforeUnmount(() => {
 <style scoped lang="scss">
 .chat-panel {
   flex: 3 1 32rem;
+  width: 100%;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -178,6 +195,10 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
+.chat-panel__header > div {
+  min-width: 0;
+}
+
 .chat-panel__header h2,
 .chat-panel__header p {
   margin: 0;
@@ -186,12 +207,18 @@ onBeforeUnmount(() => {
 .chat-panel__header h2 {
   font-family: 'Manrope';
   font-size: 1.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chat-panel__header p {
   font-family: 'Nunito';
   font-size: 0.85rem;
   opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chat-panel__price {
@@ -258,6 +285,23 @@ onBeforeUnmount(() => {
   color: rgba(15, 23, 42, 0.55);
 }
 
+.chat-message__images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chat-message__image-link {
+  display: block;
+}
+
+.chat-message__images img {
+  width: min(160px, 100%);
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
 .chat-message__body p {
   margin: 0;
   font-family: 'Nunito';
@@ -275,10 +319,13 @@ onBeforeUnmount(() => {
 }
 
 .chat-panel__composer {
+  width: 100%;
+  max-width: 100%;
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .chat-panel__attachment-track {

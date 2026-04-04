@@ -5,11 +5,26 @@ import Navbar from '../components/Navbar.vue';
 import NotificationsModal from '../components/NotificationsModal.vue';
 import Sidebar from '../components/Sidebar.vue';
 import { useUploadPage } from '../composables/useUploadPage';
+import IsbnRecommendationModal from './IsbnRecommendationModal.vue';
 import UploadBookDetailsSection from './UploadBookDetailsSection.vue';
 import UploadListingDetailsSection from './UploadListingDetailsSection.vue';
+import UploadModeSwitch from './UploadModeSwitch.vue';
 import UploadPhotosSection from './UploadPhotosSection.vue';
 
-const { form, listingImage, extraImages, notifications, handleListingImage, handleExtraImages, submitUpload } = useUploadPage();
+const {
+  form,
+  listingImage,
+  extraImages,
+  isbnRecommendationOpen,
+  isbnRecommendationLoading,
+  skipIsbnRecommendation,
+  notifications,
+  handleListingImage,
+  handleExtraImages,
+  closeIsbnRecommendation,
+  confirmUploadWithoutIsbn,
+  submitUpload
+} = useUploadPage();
 </script>
 
 <template>
@@ -17,6 +32,7 @@ const { form, listingImage, extraImages, notifications, handleListingImage, hand
   <Navbar class="upload-navbar" />
   <main class="upload-page">
     <MetaBar title="Upload" @notif-click="notifications.openNotification" />
+    <UploadModeSwitch />
     <form class="upload-form" @submit.prevent="submitUpload">
       <UploadBookDetailsSection :form="form" />
       <UploadListingDetailsSection :form="form" />
@@ -34,20 +50,33 @@ const { form, listingImage, extraImages, notifications, handleListingImage, hand
   </main>
 
   <NotificationsModal :open="notifications.notificationsOpen.value" :item="notifications.activeNotification.value" :action-loading="notifications.notificationLoading.value" @close="notifications.closeNotification" @accept="notifications.acceptRequest" @deny="notifications.denyRequest" />
+  <IsbnRecommendationModal
+    :open="isbnRecommendationOpen.value"
+    :dont-show-again="skipIsbnRecommendation.value"
+    :action-loading="isbnRecommendationLoading.value"
+    @close="closeIsbnRecommendation"
+    @confirm="confirmUploadWithoutIsbn"
+    @update:dont-show-again="skipIsbnRecommendation.value = $event"
+  />
 </template>
 
 <style scoped lang="scss">
 .upload-page {
   min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
   padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
   background: $color-background;
   color: $color-text;
+  overflow-x: clip;
 }
 
 .upload-form {
+  width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 1rem;

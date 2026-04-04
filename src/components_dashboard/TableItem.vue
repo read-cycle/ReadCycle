@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { Timestamp, type DocumentReference } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
+import AppImage from '../components/AppImage.vue';
 import type { UploadDoc, WatchlistDoc } from '../interfaces';
+import { getDisplayImageUrl } from '../utils/imageUrls';
 
 const props = defineProps<{
-  doc: [DocumentReference, UploadDoc | WatchlistDoc];
+  doc: [string, UploadDoc | WatchlistDoc];
 }>();
 
 const emit = defineEmits<{
-  delete: [DocumentReference];
+  delete: [string];
 }>();
 
 function formatTimestamp(timestamp?: Timestamp) {
@@ -22,15 +24,24 @@ function formatTimestamp(timestamp?: Timestamp) {
 function getListingImage(docData: UploadDoc | WatchlistDoc) {
   return 'listingImage' in docData ? docData.listingImage : '';
 }
+
+function getListingThumbnail(docData: UploadDoc | WatchlistDoc) {
+  if (!('listingImage' in docData)) return '';
+  return getDisplayImageUrl(docData.listingImageThumb, docData.listingImage);
+}
 </script>
 
 <template>
   <li class="table-item">
     <div class="table-item__cell cell--thumb">
-      <div
-        class="table-item__thumb"
-        :style="getListingImage(props.doc[1]) ? { backgroundImage: `url(${getListingImage(props.doc[1])})` } : undefined"
-      ></div>
+      <div class="table-item__thumb">
+        <AppImage
+          v-if="getListingImage(props.doc[1])"
+          :src="getListingThumbnail(props.doc[1])"
+          :alt="`${props.doc[1].title || 'Listing'} cover`"
+          class="table-item__thumb-image"
+        />
+      </div>
     </div>
 
     <div class="table-item__cell table-item__cell-content cell--title">
@@ -95,8 +106,14 @@ function getListingImage(docData: UploadDoc | WatchlistDoc) {
   height: 48px;
   border-radius: 10px;
   background: rgba(58, 122, 254, 0.08);
-  background-size: cover;
-  background-position: center;
+  overflow: hidden;
+}
+
+.table-item__thumb-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .table-item__delete {
