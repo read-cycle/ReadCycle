@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import AppImage from '../components/AppImage.vue'
 import type { FirestoreRecord } from '../composables/firestore'
 import { subscribeToUploadPool } from '../composables/useUploadPool'
@@ -14,12 +14,7 @@ const loadError = ref(false)
 const books = ref<FirestoreRecord<UploadDoc>[]>([])
 const visibleBooks = computed(() => books.value.filter(([, book]) => book.quantity > 0))
 const hasScrollableCarousel = computed(() => visibleBooks.value.length > 1)
-const duplicatedBooks = computed(() => (
-  hasScrollableCarousel.value
-    ? [...visibleBooks.value, ...visibleBooks.value]
-    : visibleBooks.value
-))
-const DRAG_SENSITIVITY = 0.7
+const DRAG_ACTIVATION_DISTANCE = 6
 
 let scrollInterval: number | null = null
 let resumeTimeout: number | null = null
@@ -27,20 +22,8 @@ let unsubscribe: (() => void) | null = null
 let activePointerId: number | null = null
 let dragStartX = 0
 let dragStartScrollLeft = 0
-
-function setScrollLeftInstant(carousel: HTMLElement, left: number) {
-  const previousScrollBehavior = carousel.style.scrollBehavior
-  const previousScrollSnapType = carousel.style.scrollSnapType
-
-  carousel.style.scrollBehavior = 'auto'
-  carousel.style.scrollSnapType = 'none'
-  carousel.scrollLeft = left
-
-  requestAnimationFrame(() => {
-    carousel.style.scrollBehavior = previousScrollBehavior
-    carousel.style.scrollSnapType = previousScrollSnapType
-  })
-}
+let pendingDragScrollLeft: number | null = null
+let dragAnimationFrame: number | null = null
 
 function getBookSubtitle(book: UploadDoc) {
   return [book.grade, book.subject].filter(Boolean).join(' • ') || 'Available now'
@@ -56,32 +39,17 @@ function getBookImage(book: UploadDoc) {
   return getDisplayImageUrl(book.listingImageThumb, book.listingImage)
 }
 
-function getLoopWidth() {
-  const carousel = carouselRef.value
-  if (!carousel || !hasScrollableCarousel.value) return 0
-  return carousel.scrollWidth / 2
-}
-
-function normalizeScroll() {
-  const carousel = carouselRef.value
-  if (!carousel) return
-
-  const loopWidth = getLoopWidth()
-  if (!loopWidth) return
-
-  if (carousel.scrollLeft < loopWidth * 0.5) {
-    setScrollLeftInstant(carousel, carousel.scrollLeft + loopWidth)
-  } else if (carousel.scrollLeft >= loopWidth * 1.5) {
-    setScrollLeftInstant(carousel, carousel.scrollLeft - loopWidth)
-  }
-}
-
 function stepAutoScroll() {
   const carousel = carouselRef.value
   if (!carousel || isHovered.value || isDragging.value || !hasScrollableCarousel.value) return
 
-  normalizeScroll()
-  carousel.scrollLeft += 1
+  const maxScrollLeft = carousel.scrollWidth - carousel.clientWidth
+  if (carousel.scrollLeft >= maxScrollLeft) {
+    stopAutoScroll()
+    return
+  }
+
+  carousel.scrollLeft = Math.min(carousel.scrollLeft + 1, maxScrollLeft)
 }
 
 function startAutoScroll() {
@@ -101,6 +69,30 @@ function clearResumeTimeout() {
   resumeTimeout = null
 }
 
+function clearDragAnimationFrame() {
+  if (dragAnimationFrame === null) return
+  window.cancelAnimationFrame(dragAnimationFrame)
+  dragAnimationFrame = null
+}
+
+function flushPendingDragScroll() {
+  const carousel = carouselRef.value
+  if (!carousel || pendingDragScrollLeft === null) {
+    dragAnimationFrame = null
+    return
+  }
+
+  carousel.scrollLeft = pendingDragScrollLeft
+  dragAnimationFrame = null
+}
+
+function scheduleDragScroll(left: number) {
+  pendingDragScrollLeft = left
+
+  if (dragAnimationFrame !== null) return
+  dragAnimationFrame = window.requestAnimationFrame(flushPendingDragScroll)
+}
+
 function scheduleAutoScrollResume(delay = 900) {
   clearResumeTimeout()
   resumeTimeout = window.setTimeout(() => {
@@ -118,13 +110,6 @@ function pauseScroll() {
 function resumeScroll() {
   if (isDragging.value) return
   scheduleAutoScrollResume(250)
-}
-
-function recenterCarousel() {
-  const carousel = carouselRef.value
-  const loopWidth = getLoopWidth()
-  if (!carousel || !loopWidth) return
-  setScrollLeftInstant(carousel, loopWidth)
 }
 
 function getCardStep() {
@@ -147,16 +132,12 @@ function scrollByCard(direction: 1 | -1) {
   if (!carousel || !hasScrollableCarousel.value) return
 
   pauseScroll()
-  normalizeScroll()
+  const maxScrollLeft = carousel.scrollWidth - carousel.clientWidth
 
   carousel.scrollTo({
-    left: carousel.scrollLeft + getCardStep() * direction,
+    left: Math.max(0, Math.min(carousel.scrollLeft + getCardStep() * direction, maxScrollLeft)),
     behavior: 'smooth'
   })
-
-  window.setTimeout(() => {
-    normalizeScroll()
-  }, 360)
 
   scheduleAutoScrollResume(1600)
 }
@@ -169,7 +150,6 @@ function handlePointerDown(event: PointerEvent) {
   activePointerId = event.pointerId
   dragStartX = event.clientX
   dragStartScrollLeft = carousel.scrollLeft
-  isDragging.value = true
   pauseScroll()
 
   carousel.setPointerCapture(event.pointerId)
@@ -177,22 +157,33 @@ function handlePointerDown(event: PointerEvent) {
 
 function handlePointerMove(event: PointerEvent) {
   const carousel = carouselRef.value
-  if (!carousel || activePointerId !== event.pointerId || !isDragging.value) return
+  if (!carousel || activePointerId !== event.pointerId) return
 
-  const previousScrollLeft = carousel.scrollLeft
-  const deltaX = (event.clientX - dragStartX) * DRAG_SENSITIVITY
+  const deltaX = event.clientX - dragStartX
+  if (!isDragging.value && Math.abs(deltaX) < DRAG_ACTIVATION_DISTANCE) return
 
-  carousel.scrollLeft = dragStartScrollLeft - deltaX
-  normalizeScroll()
-  dragStartScrollLeft += carousel.scrollLeft - previousScrollLeft
+  if (!isDragging.value) isDragging.value = true
+
+  const maxScrollLeft = carousel.scrollWidth - carousel.clientWidth
+  scheduleDragScroll(Math.max(0, Math.min(dragStartScrollLeft - deltaX, maxScrollLeft)))
 }
 
 function handlePointerUp(event: PointerEvent) {
+  const carousel = carouselRef.value
   if (activePointerId !== event.pointerId) return
+
+  clearDragAnimationFrame()
+  if (pendingDragScrollLeft !== null && carousel) {
+    carousel.scrollLeft = pendingDragScrollLeft
+  }
+  pendingDragScrollLeft = null
+
+  if (carousel?.hasPointerCapture(event.pointerId)) {
+    carousel.releasePointerCapture(event.pointerId)
+  }
 
   activePointerId = null
   isDragging.value = false
-  normalizeScroll()
   scheduleAutoScrollResume(900)
 }
 
@@ -202,9 +193,6 @@ onMounted(() => {
       books.value = nextBooks
       loading.value = false
       loadError.value = false
-      nextTick(() => {
-        recenterCarousel()
-      })
     },
     () => {
       loading.value = false
@@ -213,15 +201,13 @@ onMounted(() => {
     8
   )
 
-  nextTick(() => {
-    recenterCarousel()
-  })
   startAutoScroll()
 })
 
 onUnmounted(() => {
   unsubscribe?.()
   clearResumeTimeout()
+  clearDragAnimationFrame()
   stopAutoScroll()
 })
 </script>
@@ -245,7 +231,7 @@ onUnmounted(() => {
     </div>
 
     <div
-      v-if="duplicatedBooks.length"
+      v-if="visibleBooks.length"
       class="carousel-shell"
       @mouseenter="pauseScroll"
       @mouseleave="resumeScroll"
@@ -260,8 +246,8 @@ onUnmounted(() => {
         @pointercancel="handlePointerUp"
       >
         <article
-          v-for="([docRef, book], index) in duplicatedBooks"
-          :key="`${docRef}-${index}`"
+          v-for="[docRef, book] in visibleBooks"
+          :key="docRef"
           class="book-card"
         >
           <div class="book-cover-wrap">
