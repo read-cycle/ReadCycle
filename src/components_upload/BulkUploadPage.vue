@@ -8,11 +8,13 @@ import { useBulkUploadPage } from '../composables/useBulkUploadPage';
 import BulkUploadBooksSection from './BulkUploadBooksSection.vue';
 import BulkUploadSelectionSection from './BulkUploadSelectionSection.vue';
 import UploadModeSwitch from './UploadModeSwitch.vue';
+import ChatBot from "@/components/ChatBot.vue";
 
 const page = useBulkUploadPage();
 </script>
 
 <template>
+  <ChatBot></ChatBot>
   <Sidebar class="upload-sidebar" />
   <Navbar class="upload-navbar" />
   <main class="upload-page">

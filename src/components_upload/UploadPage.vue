@@ -10,6 +10,7 @@ import UploadBookDetailsSection from './UploadBookDetailsSection.vue';
 import UploadListingDetailsSection from './UploadListingDetailsSection.vue';
 import UploadModeSwitch from './UploadModeSwitch.vue';
 import UploadPhotosSection from './UploadPhotosSection.vue';
+import ChatBot from "@/components/ChatBot.vue";
 
 const {
   form,
@@ -28,6 +29,7 @@ const {
 </script>
 
 <template>
+  <ChatBot></ChatBot>
   <Sidebar class="upload-sidebar" />
   <Navbar class="upload-navbar" />
   <main class="upload-page">

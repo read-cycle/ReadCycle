@@ -5,8 +5,10 @@ import Abt from './Abt.vue';
 import ContactUs from './ContactUs.vue';
 import BookCarousel from './BookCarousel.vue';
 import HowItWorks from './HowItWorks.vue';
+import ChatBot from "@/components/ChatBot.vue";
 </script>
 <template>
+    <ChatBot></ChatBot>
     <Navbar></Navbar>
     <div class="page-container">
         <Hero></Hero>

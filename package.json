@@ -36,6 +36,7 @@
     "nodemailer": "^8.0.4",
     "quagga2-vue3": "^1.0.1",
     "vue": "^3.5.17",
+    "vue-advanced-chat": "^2.1.2",
     "vue-cal": "^4.10.2",
     "vue-multiselect": "^3.4.0",
     "vue-router": "^4.6.3",

@@ -7,11 +7,13 @@ import { useBrowserPage } from '../composables/useBrowserPage';
 import BrowserRequestModal from './BrowserRequestModal.vue';
 import BrowserResults from './BrowserResults.vue';
 import BrowserToolbar from './BrowserToolbar.vue';
+import ChatBot from "@/components/ChatBot.vue";
 
 const { loading, loadingMore, hasMore, submitLoading, searchQuery, filteredDocs, selectedDoc, requestForm, notifications, loadMoreBooks, selectDoc, closeSelectedDoc, submitRequest } = useBrowserPage();
 </script>
 
 <template>
+  <ChatBot></ChatBot>
   <Sidebar class="browser-sidebar" />
   <Navbar class="browser-navbar" />
   <main class="browser-page">

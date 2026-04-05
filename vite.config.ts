@@ -4,7 +4,13 @@ import basicSsl from '@vitejs/plugin-basic-ssl';
 import path from 'path'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue({
+      template: {
+        compilerOptions: {
+          isCustomElement: (tag) => tag.startsWith("df-")
+        }
+      }
+    })],
   base: '/',
   resolve: {
     alias: {
@@ -25,6 +31,7 @@ export default defineConfig({
     }
   },
   server: {
-    host: true
+    host: true,
+    allowedHosts: ["coffered-hiddenly-james.ngrok-free.dev"]
   }
 })

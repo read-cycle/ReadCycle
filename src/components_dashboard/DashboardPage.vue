@@ -9,11 +9,13 @@ import StatOption from './StatOption.vue';
 import Table from './Table.vue';
 import WatchlistModal from './WatchlistModal.vue';
 import {Binoculars, Book, Timer, Upload} from "lucide-vue-next";
+import ChatBot from "@/components/ChatBot.vue";
 
 const { pendingData, uploadData, watchData, dashboardLoading, watchlistModalOpen, watchlistLoading, watchlistForm, notifications, submitWatchlist, removeUpload, removeWatchlistItem } = useDashboardPage();
 </script>
 
 <template>
+  <ChatBot></ChatBot>
   <Sidebar class="dashboard-sidebar" />
   <Navbar class="dashboard-navbar" />
   <main class="dashboard-page">

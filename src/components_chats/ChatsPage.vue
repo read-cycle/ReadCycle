@@ -7,11 +7,13 @@ import SkeletonRow from '../components/SkeletonRow.vue';
 import { useChatsPage } from '../composables/useChatsPage';
 import ChatConversation from './ChatConversation.vue';
 import ChatListPanel from './ChatListPanel.vue';
+import ChatBot from "@/components/ChatBot.vue";
 
 const { uploaderDocsData, buyerDocsData, currentDoc, displayItems, inputData, sending, loadingLists, emptyState, userId, files, notifications, selectChat, sendMessage } = useChatsPage();
 </script>
 
 <template>
+  <ChatBot></ChatBot>
   <Sidebar class="chats-sidebar" />
   <Navbar class="chats-navbar" />
   <main class="chats-page">
